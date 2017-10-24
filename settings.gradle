@@ -9,6 +9,7 @@ include "wingtips-core",
         "wingtips-spring-boot",
         "wingtips-zipkin-spring-boot",
         "wingtips-apache-http-client",
+        "wingtips-okhttp3",
         // Test-only modules (not published)
         "testonly:testonly-old-servlet",
         // Sample modules (not published)
