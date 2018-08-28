@@ -10,7 +10,8 @@ dependencies {
             project(":wingtips-core")
     )
     compileOnly(
-            "org.springframework:spring-web:$springVersion"
+            "org.springframework:spring-web:$springVersion",
+            'io.zipkin.brave:brave-instrumentation-spring-web:5.2.0'
     )
     testCompile(
             "junit:junit-dep:$junitVersion",

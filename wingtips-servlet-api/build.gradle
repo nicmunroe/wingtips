@@ -11,7 +11,9 @@ dependencies {
             project(":wingtips-core")
     )
     compileOnly(
-            "javax.servlet:javax.servlet-api:$servletApiVersion"
+            "javax.servlet:javax.servlet-api:$servletApiVersion",
+            'io.zipkin.brave:brave:5.2.0',
+            'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
     )
     testCompile(
             "junit:junit-dep:$junitVersion",
