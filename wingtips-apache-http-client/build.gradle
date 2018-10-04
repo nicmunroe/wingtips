@@ -11,7 +11,8 @@ dependencies {
             project(":wingtips-core")
     )
     compileOnly(
-            "org.apache.httpcomponents:httpclient:$apacheHttpClientVersion"
+            "org.apache.httpcomponents:httpclient:$apacheHttpClientVersion",
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testCompile(
             project(":wingtips-servlet-api"),

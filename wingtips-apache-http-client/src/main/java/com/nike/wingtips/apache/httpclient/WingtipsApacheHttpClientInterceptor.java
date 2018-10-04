@@ -1,10 +1,14 @@
 package com.nike.wingtips.apache.httpclient;
 
-import static com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil.propagateTracingHeaders;
+import com.nike.internal.util.StringUtils;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
+import com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.ZipkinTagStrategy;
 
-import java.io.IOException;
-
-import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
@@ -13,15 +17,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.NotNull;
 
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
-import com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.tags.OpenTracingTagStrategy;
+import static com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil.propagateTracingHeaders;
 
 /**
  * (NOTE: {@link WingtipsHttpClientBuilder} is recommended instead of these interceptors if you have control over which
@@ -81,8 +79,6 @@ import com.nike.wingtips.tags.OpenTracingTagStrategy;
 @SuppressWarnings("WeakerAccess")
 public class WingtipsApacheHttpClientInterceptor implements HttpRequestInterceptor, HttpResponseInterceptor {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    
     /**
      * Static default instance of this class. This class is thread-safe so you can reuse this default instance instead
      * of creating new objects.
@@ -108,7 +104,8 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
 
     protected final boolean surroundCallsWithSubspan;
     
-    protected HttpTagStrategy<HttpRequest, HttpResponse> tagStrategy;
+    protected final HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> tagStrategy;
+    protected final HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapter;
 
     /**
      * Creates a new instance with the subspan option turned on.
@@ -126,25 +123,37 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
      * subspan option.
      */
     public WingtipsApacheHttpClientInterceptor(boolean surroundCallsWithSubspan) {
-        this(surroundCallsWithSubspan, new OpenTracingTagStrategy<HttpRequest, HttpResponse>(new ApacheHttpClientTagAdapter()));
+        this(
+            surroundCallsWithSubspan,
+            new ZipkinTagStrategy<HttpRequest, HttpResponse>(),
+            new ApacheHttpClientTagAdapter()
+        );
     }
     
-    public WingtipsApacheHttpClientInterceptor(boolean surroundCallsWithSubspan, HttpTagStrategy<HttpRequest, HttpResponse> tagStrategy) {
+    public WingtipsApacheHttpClientInterceptor(
+        boolean surroundCallsWithSubspan,
+        HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapter
+    ) {
         this.surroundCallsWithSubspan = surroundCallsWithSubspan;
         this.tagStrategy = tagStrategy;
+        this.tagAdapter = tagAdapter;
     }
 
 
     @Override
-    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+    public void process(HttpRequest request, HttpContext context) {
         Tracer tracer = Tracer.getInstance();
 
         if (surroundCallsWithSubspan) {
             // Will start a new trace if necessary, or a subspan if a trace is already in progress.
-            Span spanToClose = tracer.startSpanInCurrentContext(getSubspanSpanName(request), Span.SpanPurpose.CLIENT);
+            Span spanToClose = tracer.startSpanInCurrentContext(
+                getSubspanSpanName(request, tagStrategy, tagAdapter),
+                Span.SpanPurpose.CLIENT
+            );
             
-            tagSpanWithRequestAttributes(spanToClose, request);
-            
+            tagStrategy.handleRequestTagging(spanToClose, request, tagAdapter);
+
             // Add the subspan to the HttpContext so that the response interceptor can retrieve and close it.
             context.setAttribute(SPAN_TO_CLOSE_HTTP_CONTEXT_ATTR_KEY, spanToClose);
         }
@@ -153,17 +162,23 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
     }
 
     @Override
-    public void process(HttpResponse response, HttpContext context) throws HttpException, IOException {
+    public void process(HttpResponse response, HttpContext context) {
         // See if there's a subspan passed to us from the request interceptor.
         Span spanToClose = (Span) context.getAttribute(SPAN_TO_CLOSE_HTTP_CONTEXT_ATTR_KEY);
         if (spanToClose != null) {
-            tagSpanWithResponseAttributes(spanToClose, response);
-            
-            // There was a subspan. Close it.
-            // Span.close() contains the logic we want - if the spanToClose was an overall span (new trace)
-            //      then tracer.completeRequestSpan() will be called, otherwise it's a subspan and
-            //      tracer.completeSubSpan() will be called.
-            spanToClose.close();
+            // There was a subspan. Finalize and close it.
+            try {
+                // Handle response/error tagging and final span name.
+                //      We don't have a request or error at this point, so we pass null for those args.
+                tagStrategy.handleResponseTaggingAndFinalSpanName(
+                    spanToClose, null, response, null, tagAdapter
+                );
+            } finally {
+                // Span.close() contains the logic we want - if the spanToClose was an overall span (new trace)
+                //      then tracer.completeRequestSpan() will be called, otherwise it's a subspan and
+                //      tracer.completeSubSpan() will be called.
+                spanToClose.close();
+            }
         }
     }
 
@@ -177,7 +192,19 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
      * @param request The request that is about to be executed.
      * @return The name that should be used for the subspan surrounding the call.
      */
-    protected String getSubspanSpanName(HttpRequest request) {
+    protected @NotNull String getSubspanSpanName(
+        @NotNull HttpRequest request,
+        @NotNull HttpTagAndSpanNamingStrategy<HttpRequest, ?> namingStrategy,
+        @NotNull HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapter
+    ) {
+        // Try the naming strategy first.
+        String subspanNameFromStrategy = namingStrategy.getInitialSpanName(request, adapter);
+
+        if (StringUtils.isNotBlank(subspanNameFromStrategy)) {
+            return subspanNameFromStrategy;
+        }
+
+        // The naming strategy didn't have anything for us. Fall back to something reasonable.
         return WingtipsApacheHttpClientUtil.getSubspanSpanName(request);
     }
 
@@ -213,33 +240,5 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
         builder.addInterceptorLast((HttpResponseInterceptor)interceptor);
 
         return builder;
-    }
-    
-    /**
-     * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-     * span handling with exceptions from the {@code tagStrategy}.
-     * @param span The span to be tagged
-     * @param requestObj The request context to use for tag values
-     */
-    private void tagSpanWithRequestAttributes(Span span, HttpRequest requestObj) {
-        try {
-            tagStrategy.tagSpanWithRequestAttributes(span, requestObj);
-        } catch(Throwable taggingException) {
-            logger.warn("Unable to tag span with request attributes", taggingException);
-        }
-    }
-
-    /**
-     * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-     * span handling with exceptions from the {@code tagStrategy}.
-     * @param span The span to be tagged
-     * @param responseObj The response context to be used for tag values
-     */
-    private void tagSpanWithResponseAttributes(Span span, HttpResponse responseObj) {
-        try {
-            tagStrategy.tagSpanWithResponseAttributes(span, responseObj);
-        } catch(Throwable taggingException) {
-            logger.warn("Unable to tag span with response attributes", taggingException);
-        }
     }
 }

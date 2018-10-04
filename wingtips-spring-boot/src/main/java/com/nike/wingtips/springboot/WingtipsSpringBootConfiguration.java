@@ -21,8 +21,7 @@ import org.springframework.core.Ordered;
 
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.RequestTracingFilter;
-import com.nike.wingtips.tags.HttpTagAdapter;
-import com.nike.wingtips.tags.HttpTagStrategy;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 
 /**
  * Wingtips Spring Boot configuration - this class enables Wingtips tracing on incoming requests by exposing a {@link
@@ -76,7 +75,7 @@ public class WingtipsSpringBootConfiguration {
     protected WingtipsSpringBootProperties wingtipsProperties;
     
     @Autowired(required = false)
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> tagStrategy;
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategy;
 
     @Autowired
     public WingtipsSpringBootConfiguration(WingtipsSpringBootProperties wingtipsProperties) {

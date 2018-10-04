@@ -1,8 +1,13 @@
 package com.nike.wingtips.apache.httpclient;
 
-import static com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil.propagateTracingHeaders;
-
-import java.io.IOException;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Span.SpanPurpose;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
+import com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.ZipkinTagStrategy;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -18,16 +23,10 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.execchain.ClientExecChain;
 import org.apache.http.protocol.HttpProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Span.SpanPurpose;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
-import com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.tags.OpenTracingTagStrategy;
+import java.io.IOException;
+
+import static com.nike.wingtips.apache.httpclient.util.WingtipsApacheHttpClientUtil.propagateTracingHeaders;
 
 /**
  * (NOTE: This class is recommended instead of {@link WingtipsApacheHttpClientInterceptor} if you have control over
@@ -77,11 +76,10 @@ import com.nike.wingtips.tags.OpenTracingTagStrategy;
 @SuppressWarnings("WeakerAccess")
 public class WingtipsHttpClientBuilder extends HttpClientBuilder {
 
-    private static final Logger logger = LoggerFactory.getLogger(WingtipsHttpClientBuilder.class);
-    
     protected boolean surroundCallsWithSubspan;
 
-    protected HttpTagStrategy<HttpRequest, HttpResponse> tagStrategy;
+    protected HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> tagStrategy;
+    protected HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapter;
     
     /**
      * Creates a new instance with the subspan option turned on.
@@ -99,7 +97,11 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
      * subspan option.
      */
     public WingtipsHttpClientBuilder(boolean surroundCallsWithSubspan) {
-        this(surroundCallsWithSubspan, new OpenTracingTagStrategy<HttpRequest, HttpResponse>(new ApacheHttpClientTagAdapter()));
+        this(
+            surroundCallsWithSubspan,
+            new ZipkinTagStrategy<HttpRequest, HttpResponse>(),
+            new ApacheHttpClientTagAdapter()
+        );
     }
 
     /**
@@ -109,9 +111,15 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
      * subspan option.
      * @param tagStrategy The span tag strategy to use
      */
-    public WingtipsHttpClientBuilder(boolean surroundCallsWithSubspan, HttpTagStrategy<HttpRequest, HttpResponse> tagStrategy) {
-            this.surroundCallsWithSubspan = surroundCallsWithSubspan;
-            this.tagStrategy = tagStrategy;
+    public WingtipsHttpClientBuilder(
+        boolean surroundCallsWithSubspan,
+        HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapter
+    ) {
+        // TODO: Handle null tagStrategy/tagAdapter.
+        this.surroundCallsWithSubspan = surroundCallsWithSubspan;
+        this.tagStrategy = tagStrategy;
+        this.tagAdapter = tagAdapter;
     }
     
     /**
@@ -140,8 +148,12 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
      * @return Static factory method for creating a new {@link WingtipsHttpClientBuilder} instance with the subspan
      * option set to the value of the {@code surroundCallsWithSubspan} argument.
      */
-    public static WingtipsHttpClientBuilder create(boolean surroundCallsWithSubspan, HttpTagStrategy<HttpRequest, HttpResponse> tagStrategy) {
-        return new WingtipsHttpClientBuilder(surroundCallsWithSubspan, tagStrategy);
+    public static WingtipsHttpClientBuilder create(
+        boolean surroundCallsWithSubspan,
+        HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapter
+    ) {
+        return new WingtipsHttpClientBuilder(surroundCallsWithSubspan, tagStrategy, tagAdapter);
     }
 
     @Override
@@ -166,22 +178,33 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
                                                  HttpExecutionAware execAware) throws IOException, HttpException {
                 
                 // Will start a new trace if necessary, or a subspan if a trace is already in progress.
-                Span spanAroundCall = Tracer.getInstance().startSpanInCurrentContext(getSubspanSpanName(request), SpanPurpose.CLIENT);
-                tagSpanWithRequestAttributes(spanAroundCall, request);
+                Span spanAroundCall = Tracer.getInstance().startSpanInCurrentContext(
+                    getSubspanSpanName(request), SpanPurpose.CLIENT
+                );
 
+                CloseableHttpResponse response = null;
+                Throwable errorForTagging = null;
                 try {
-                    CloseableHttpResponse response = propagateHeadersAndExecute(route, request, clientContext, execAware);
-                    tagSpanWithResponseAttributes(spanAroundCall, response);
+                    tagStrategy.handleRequestTagging(spanAroundCall, request, tagAdapter);
+                    response = propagateHeadersAndExecute(route, request, clientContext, execAware);
                     return response;
                 } catch(Throwable t) {
-                        handleErroredRequestTags(spanAroundCall, t);
-                        throw t;
+                    errorForTagging = t;
+                    throw t;
                 }
                 finally {
-                    // Span.close() contains the logic we want - if the spanAroundCall was an overall span (new
-                    //      trace) then tracer.completeRequestSpan() will be called, otherwise it's a subspan and
-                    //      tracer.completeSubSpan() will be called.
-                    spanAroundCall.close();
+                    try {
+                        // Handle response/error tagging and final span name.
+                        tagStrategy.handleResponseTaggingAndFinalSpanName(
+                            spanAroundCall, request, response, errorForTagging, tagAdapter
+                        );
+                    }
+                    finally {
+                        // Span.close() contains the logic we want - if the spanAroundCall was an overall span (new
+                        //      trace) then tracer.completeRequestSpan() will be called, otherwise it's a subspan and
+                        //      tracer.completeSubSpan() will be called.
+                        spanAroundCall.close();
+                    }
                 }
             }
             
@@ -190,48 +213,6 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
                     HttpExecutionAware execAware) throws IOException, HttpException {
                 propagateTracingHeaders(request, Tracer.getInstance().getCurrentSpan());
                 return protocolExec.execute(route, request, clientContext, execAware);
-            }
-            
-            /**
-             * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-             * span handling with exceptions from the {@code tagStrategy}.
-             * @param span The span to be tagged
-             * @param requestObj The request context to use for tag values
-             */
-            private void tagSpanWithRequestAttributes(Span span, HttpRequest requestObj) {
-                try {
-                    tagStrategy.tagSpanWithRequestAttributes(span, requestObj);
-                } catch(Throwable taggingException) {
-                    logger.warn("Unable to tag span with request attributes", taggingException);
-                }
-            }
-
-            /**
-             * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-             * span handling with exceptions from the {@code tagStrategy}.
-             * @param span The span to be tagged
-             * @param responseObj The response context to be used for tag values
-             */
-            private void tagSpanWithResponseAttributes(Span span, HttpResponse responseObj) {
-                try {
-                    tagStrategy.tagSpanWithResponseAttributes(span, responseObj);
-                } catch(Throwable taggingException) {
-                    logger.warn("Unable to tag span with response attributes", taggingException);
-                }
-            }
-
-            /**
-             * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-             * span handling with exceptions from the {@code tagStrategy}.
-             * @param span The span to be tagged
-             * @param throwable The exception context to use for tag values
-             */
-            private  void handleErroredRequestTags(Span span, Throwable throwable) {
-                try {
-                    tagStrategy.handleErroredRequest(span, throwable);
-                } catch(Throwable taggingException) {
-                    logger.warn("Unable to tag errored span with exception", taggingException);
-                }
             }
         };
     }

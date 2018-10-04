@@ -3,6 +3,7 @@ package com.nike.wingtips.springboot;
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.Tracer.SpanLoggingRepresentation;
 import com.nike.wingtips.servlet.RequestTracingFilter;
+import com.nike.wingtips.spring.util.WingtipsSpringUtil;
 import com.nike.wingtips.springboot.WingtipsSpringBootConfiguration.DoNothingServletFilter;
 import com.nike.wingtips.springboot.componenttest.componentscanonly.ComponentTestMainWithComponentScanOnly;
 import com.nike.wingtips.springboot.componenttest.manualimportandcomponentscan.ComponentTestMainWithBothManualImportAndComponentScan;
@@ -17,11 +18,18 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -218,6 +226,54 @@ public class WingtipsSpringBootConfigurationTest {
         ComponentTestSetup(Class<?> mainClass, boolean expectComponentScannedObjects) {
             this.mainClass = mainClass;
             this.expectComponentScannedObjects = expectComponentScannedObjects;
+        }
+    }
+
+    String dictionary = "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private String generateRandomString(int size) {
+        Random random = new Random(System.nanoTime());
+        StringBuilder sb = new StringBuilder(size);
+        for (int i = 0; i < size; i++) {
+            char nextChar = dictionary.charAt(random.nextInt(dictionary.length()));
+            sb.append(nextChar);
+        }
+
+        return sb.toString();
+    }
+
+    @Test
+    public void foo() throws ExecutionException, InterruptedException {
+        int serverPort = findFreePort();
+        ConfigurableApplicationContext serverAppContext = SpringApplication.run(ComponentTestMainWithComponentScanOnly.class, "--server.port=" + serverPort);
+        try {
+            String uuid = UUID.randomUUID().toString();
+
+            AsyncRestTemplate restTemplate = WingtipsSpringUtil.createTracingEnabledAsyncRestTemplate(true);
+            String body = generateRandomString(10000);
+            ResponseEntity<String>
+                response = restTemplate.exchange("http://localhost:" + serverPort + "/foo/{bar}?thing=stuff", HttpMethod.GET, new HttpEntity<>(body), String.class, uuid).get();
+
+//            RestTemplate restTemplate = WingtipsSpringUtil.createTracingEnabledRestTemplate(true);
+//            String body = generateRandomString(10000);
+//            ResponseEntity<String>
+//                response = restTemplate.exchange("http://localhost:" + serverPort + "/foo/{bar}?thing=stuff", HttpMethod.GET, new HttpEntity<>(body), String.class, uuid);
+
+//            ExtractableResponse response =
+//                given()
+//                    .baseUri("http://localhost")
+//                    .port(serverPort)
+//                    .log().all()
+//                    .when()
+//                    .get("/foo/" + uuid)
+//                    .then()
+//                    .log().all()
+//                    .extract();
+
+            response.toString();
+        }
+        finally {
+            SpringApplication.exit(serverAppContext);
         }
     }
 

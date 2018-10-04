@@ -453,7 +453,7 @@ with that key doesn't already exist.
 
 Tag Strategies are a set of classes that apply consistent tagging to every span
 based on data extracted from the HTTP request and response. There are several 
-[HttpTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/HttpTagStrategy.java) 
+[HttpTagAndSpanNamingStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/HttpTagAndSpanNamingStrategy.java) 
 implementations:
 - [OpenTracingTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
 - [ZipkinTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/ZipkinTagStrategy.java)

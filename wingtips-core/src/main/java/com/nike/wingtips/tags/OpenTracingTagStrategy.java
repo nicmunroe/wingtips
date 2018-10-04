@@ -1,6 +1,10 @@
 package com.nike.wingtips.tags;
 
+import com.nike.internal.util.StringUtils;
 import com.nike.wingtips.Span;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * In an effort to match tag patterns consistent with other implementations and with the OpenTracing standards, this class
@@ -11,39 +15,39 @@ import com.nike.wingtips.Span;
  *     <li>http.method</li>
  *     <li>error</li>
  * </ul>
- * 
- * These tag names are based on names provided via OpenTracing's <a href="https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/tag/Tags.java">Tags.java</a>
+ *
+ * These tag names are based on names provided via OpenTracing's
+ * <a href="https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/tag/Tags.java">
+ *     Tags.java
+ * </a>
  */
-public class OpenTracingTagStrategy <REQ,RES> implements HttpTagStrategy<REQ,RES> {
+public class OpenTracingTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
 
-    protected HttpTagAdapter<REQ,RES> adapter;
-
-    public OpenTracingTagStrategy(HttpTagAdapter<REQ,RES> adapter) {
-        this.adapter = adapter;
+    @Override
+    protected void doHandleRequestTagging(
+        @NotNull Span span,
+        @NotNull REQ request,
+        @NotNull HttpTagAndSpanNamingAdapter<REQ, ?> adapter
+    ) {
+        putTagIfValueIsNotBlank(span, KnownOpenTracingTags.HTTP_METHOD, adapter.getRequestHttpMethod(request));
+        putTagIfValueIsNotBlank(span, KnownOpenTracingTags.HTTP_URL, adapter.getRequestUrl(request));
     }
 
     @Override
-    public void tagSpanWithRequestAttributes(Span span, REQ requestObj) {
-        span.putTag(KnownOpenTracingTags.HTTP_METHOD, adapter.getRequestHttpMethod(requestObj));
-        span.putTag(KnownOpenTracingTags.HTTP_URL, adapter.getRequestUrl(requestObj));
-    }
+    protected void doHandleResponseAndErrorTagging(
+        @NotNull Span span,
+        @Nullable REQ request,
+        @Nullable RES response,
+        @Nullable Throwable error,
+        @NotNull HttpTagAndSpanNamingAdapter<REQ, RES> adapter
+    ) {
+        putTagIfValueIsNotBlank(span, KnownOpenTracingTags.HTTP_STATUS, adapter.getResponseHttpStatus(response));
 
-    @Override
-    public void tagSpanWithResponseAttributes(Span span, RES responseObj) {
-        span.putTag(KnownOpenTracingTags.HTTP_STATUS, adapter.getResponseHttpStatus(responseObj));
-        if (adapter.isErrorResponse(responseObj)) {
-            addErrorTagToSpan(span);
+        if (error != null || StringUtils.isNotBlank(adapter.getErrorResponseTagValue(response))) {
+            // OpenTracing doesn't expect you to pass messages with the error tag, just error=true.
+            //      So we don't need to do anything with the given error Throwable or returned
+            //      getErrorResponseTagValue(), other than have them trigger adding the error=true tag.
+            span.putTag(KnownOpenTracingTags.ERROR, "true");
         }
     }
-
-    @Override
-    public void handleErroredRequest(Span span, Throwable throwable) {
-        addErrorTagToSpan(span);
-    }
-
-    protected void addErrorTagToSpan(Span span) {
-        span.putTag(KnownOpenTracingTags.ERROR, "true");
-    }
-
-
 }

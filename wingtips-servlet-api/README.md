@@ -96,13 +96,13 @@ propagating tracing information. You may also want to consider
 
 ### Server Request Span Tagging
 
-`HttpServletRequests` and `HttpServletResponses` handled by the `RequestTracingFilter` are passed to a `HttpTagStrategy`
+`HttpServletRequests` and `HttpServletResponses` handled by the `RequestTracingFilter` are passed to a `HttpTagAndSpanNamingStrategy`
 to add metadata to a Span in the form of tags. The [OpenTracingTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
 is default.
 
 #### Using a pre-defined tag strategy
 
-The `HttpTagStrategy` is defined by the init param `server-side-span-tag-strategy`.  Valid values are:
+The `HttpTagAndSpanNamingStrategy` is defined by the init param `server-side-span-tag-strategy`.  Valid values are:
 - `OPENTRACING` **default** - Uses the [OpenTracingTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
 - `WINGTIPS` Uses the [WingtipsTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/WingtipsTagStrategy.java)
 - `NONE` Uses the [NoOpTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/NoOpTagStrategy.java)
@@ -121,7 +121,7 @@ add a tag for the exception name:
 ```java
 public class ErrorTaggingRequestTracingFilter extends RequestTracingFilter {
     @Override
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(FilterConfig filterConfig)  {
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(FilterConfig filterConfig)  {
     		return new OpenTracingTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
 
 				@Override public void handleErroredRequest(Span span, Throwable throwable) {

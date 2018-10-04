@@ -1,24 +1,14 @@
 package com.nike.wingtips.apache.httpclient;
 
-import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
-import static com.nike.wingtips.TraceHeaders.SPAN_ID;
-import static com.nike.wingtips.TraceHeaders.TRACE_ID;
-import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
-import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
-import static org.apache.http.HttpVersion.HTTP_1_1;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.KnownOpenTracingTags;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
@@ -40,13 +30,25 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.MDC;
 
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.tags.KnownOpenTracingTags;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
+import static com.nike.wingtips.TraceHeaders.SPAN_ID;
+import static com.nike.wingtips.TraceHeaders.TRACE_ID;
+import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
+import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
+import static org.apache.http.HttpVersion.HTTP_1_1;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests the functionality of {@link WingtipsHttpClientBuilder}.
@@ -154,13 +156,27 @@ public class WingtipsHttpClientBuilderTest {
     public void error_with_tag_strategy_doesnt_affect_execution() throws IOException, HttpException {
         
         //given
-        HttpTagStrategy<HttpRequest, HttpResponse> explosiveTagStrategy = new HttpTagStrategy<HttpRequest, HttpResponse>() {
-            @Override public void tagSpanWithRequestAttributes(Span span, HttpRequest requestObj) { throw new RuntimeException("boom"); }
-            @Override public void tagSpanWithResponseAttributes(Span span, HttpResponse responseObj) { throw new RuntimeException("boom"); }
-            @Override public void handleErroredRequest(Span span, Throwable throwable) { throw new RuntimeException("boom"); }
+        HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> explosiveTagStrategy = new HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse>() {
+            @Override
+            protected void doHandleRequestTagging(
+                Span span, HttpRequest request,
+                HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapter
+            ) {
+                throw new RuntimeException("boom");
+            }
+
+            @Override
+            protected void doHandleResponseAndErrorTagging(
+                Span span, HttpRequest request,
+                HttpResponse response,
+                Throwable error,
+                HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> adapter
+            ) {
+                throw new RuntimeException("boom");
+            }
         };
         
-        builder = WingtipsHttpClientBuilder.create(true, explosiveTagStrategy);
+        builder = WingtipsHttpClientBuilder.create(true, explosiveTagStrategy, mock(HttpTagAndSpanNamingAdapter.class));
         SpanCapturingClientExecChain origCec = spy(new SpanCapturingClientExecChain());
         
         // when

@@ -1,10 +1,14 @@
 package com.nike.wingtips.http;
 
+import com.nike.internal.util.StringUtils;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.TraceHeaders;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,6 +201,7 @@ public class HttpRequestTracingUtils {
      * @return The name that should be used for the subspan surrounding the call.
      */
     public static String getSubspanSpanNameForHttpRequest(String prefix, String httpMethod, String uri) {
+        // TODO: Stop spitting out URI. Prefix and method only.
         uri = maskQueryString(uri);
 
         StringBuilder sb = new StringBuilder();
@@ -234,5 +239,41 @@ public class HttpRequestTracingUtils {
      */
     public static String convertSampleableBooleanToExpectedB3Value(boolean sampleable) {
         return (sampleable) ? "1" : "0";
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public static @NotNull <REQ, RES> String generateSafeSpanName(
+        @Nullable REQ request,
+        @Nullable RES response,
+        @NotNull HttpTagAndSpanNamingAdapter<REQ, RES> adapter
+    ) {
+        String httpMethod = (adapter == null) ? null : adapter.getRequestHttpMethod(request);
+        String pathTemplate = (adapter == null) ? null : adapter.getRequestUriPathTemplate(request, response);
+        Integer responseStatusCode = (adapter == null) ? null : adapter.getResponseHttpStatus(response);
+
+        return generateSafeSpanName(httpMethod, pathTemplate, responseStatusCode);
+    }
+
+    public static @NotNull String generateSafeSpanName(
+        @Nullable String requestHttpMethod,
+        @Nullable String pathTemplate,
+        @Nullable Integer responseStatusCode
+    ) {
+        if (requestHttpMethod == null) {
+            requestHttpMethod = "UNKNOWN_HTTP_METHOD";
+        }
+
+        if (responseStatusCode != null) {
+            if (responseStatusCode / 100 == 3) {
+                return requestHttpMethod + " redirected";
+            }
+            else if (responseStatusCode == 404) {
+                return requestHttpMethod + " not_found";
+            }
+        }
+
+        return (StringUtils.isBlank(pathTemplate))
+               ? requestHttpMethod
+               : requestHttpMethod + " " + pathTemplate;
     }
 }

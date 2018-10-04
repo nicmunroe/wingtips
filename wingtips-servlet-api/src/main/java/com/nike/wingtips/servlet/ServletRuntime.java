@@ -1,14 +1,15 @@
 package com.nike.wingtips.servlet;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.util.TracingState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.util.TracingState;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * A class for abstracting out bits of the Servlet API that are version-dependent, e.g. async request support
@@ -57,9 +58,13 @@ abstract class ServletRuntime {
      * @param originalRequestTracingState The {@link TracingState} that was generated when this request started, and
      * which should be completed when the given async servlet request finishes.
      */
-    abstract void setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest asyncRequest,
-                                                                  TracingState originalRequestTracingState,
-                                                                  HttpTagStrategy<HttpServletRequest,HttpServletResponse> tagStrategy);
+    abstract void setupTracingCompletionWhenAsyncRequestCompletes(
+        HttpServletRequest asyncRequest,
+        HttpServletResponse asyncResponse,
+        TracingState originalRequestTracingState,
+        HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+    );
 
     /**
      * The dispatcher type {@code javax.servlet.DispatcherType.ASYNC} introduced in Servlet 3.0 means a filter can be
@@ -116,9 +121,13 @@ abstract class ServletRuntime {
         }
 
         @Override
-        public void setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest asyncRequest,
-                                                                    TracingState originalRequestTracingState,
-                                                                    HttpTagStrategy<HttpServletRequest,HttpServletResponse> tagStrategy) {
+        public void setupTracingCompletionWhenAsyncRequestCompletes(
+            HttpServletRequest asyncRequest,
+            HttpServletResponse asyncResponse,
+            TracingState originalRequestTracingState,
+            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
+            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+        ) {
             throw new IllegalStateException("This method should never be called in a pre-Servlet-3.0 environment.");
         }
 
@@ -139,12 +148,18 @@ abstract class ServletRuntime {
         }
 
         @Override
-        public void setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest asyncRequest,
-                                                                    TracingState originalRequestTracingState,
-                                                                    HttpTagStrategy<HttpServletRequest,HttpServletResponse> tagStrategy) {
+        public void setupTracingCompletionWhenAsyncRequestCompletes(
+            HttpServletRequest asyncRequest,
+            HttpServletResponse asyncResponse,
+            TracingState originalRequestTracingState,
+            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
+            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+        ) {
             // Async processing was started, so we have to complete it with a listener.
             asyncRequest.getAsyncContext().addListener(
-                new WingtipsRequestSpanCompletionAsyncListener(originalRequestTracingState, tagStrategy)
+                new WingtipsRequestSpanCompletionAsyncListener(originalRequestTracingState, tagStrategy, tagAdapter),
+                asyncRequest,
+                asyncResponse
             );
         }
 

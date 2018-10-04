@@ -33,7 +33,7 @@ For general Wingtips information please see the [base project README.md](../READ
 <a name="client_request_span_tagging"/>
 ## Client Request Span Tagging
 
-Both synchronous and asynchronous outbound requests make calls to the provided `HttpTagStrategy` to allow for metadata
+Both synchronous and asynchronous outbound requests make calls to the provided `HttpTagAndSpanNamingStrategy` to allow for metadata
 to be appended to the span surrounding the request. 
 
 Related: [Server Request Span Tagging](../wingtips-servlet-api/README.md#server_request_span_tagging)
@@ -51,9 +51,9 @@ The default implementation uses the `OpenTracingTagStrategy` to append the follo
 ### Defining a Custom Tagging Strategy
 
 The `WingtipsSpringUtil` class exposes methods to generate a `RestTemplate` and an `AsyncRestTemplate` that accept an
-`HttpTagStrategy<HttpRequest, ClientHttpResponse>` as a parameter. 
-- `public static RestTemplate createTracingEnabledRestTemplate(HttpTagStrategy<HttpRequest, ClientHttpResponse> tagStrategy)`
-- `public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate(HttpTagStrategy<HttpRequest, ClientHttpResponse> tagStrategy)`
+`HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse>` as a parameter. 
+- `public static RestTemplate createTracingEnabledRestTemplate(HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> tagStrategy)`
+- `public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate(HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> tagStrategy)`
 
 The tagStrategy provided will be used to append tags for the requests made with the returned rest template. 
 
@@ -73,7 +73,7 @@ private RestTemplate createTracedRestTemplate() {
 	return WingtipsSpringUtil.createTracingEnabledRestTemplate(getZipkinTagStrategy());
 }
  
-private HttpTagStrategy<HttpRequest, ClientHttpResponse> getZipkinTagStrategy() {
+private HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> getZipkinTagStrategy() {
 	return new ZipkinTagStrategy<HttpRequest, ClientHttpResponse>(new SpringHttpClientTagAdapter());
 }
 ```

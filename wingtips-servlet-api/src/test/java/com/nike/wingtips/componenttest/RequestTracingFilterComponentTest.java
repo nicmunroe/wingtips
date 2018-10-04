@@ -1,7 +1,24 @@
 package com.nike.wingtips.componenttest;
 
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
+import com.nike.internal.util.MapBuilder;
+import com.nike.internal.util.Pair;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.TraceHeaders;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
+import com.nike.wingtips.servlet.RequestTracingFilter;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -22,34 +39,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import com.nike.internal.util.MapBuilder;
-import com.nike.internal.util.Pair;
-import com.nike.wingtips.Span;
-import com.nike.wingtips.TraceHeaders;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
-import com.nike.wingtips.servlet.RequestTracingFilter;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import io.restassured.response.ExtractableResponse;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Component test to verify that {@link RequestTracingFilter} works as expected when deployed to a real running server.
  *
  * @author Nic Munroe
  */
-@Ignore
 @RunWith(DataProviderRunner.class)
 public class RequestTracingFilterComponentTest {
 
@@ -145,7 +144,7 @@ public class RequestTracingFilterComponentTest {
                 .extract();
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.asString()).isEqualTo(ASYNC_RESULT);
+        assertThat(response.asString()).isEqualTo(WILDCARD_RESULT);
         verifySingleSpanCompletedAndReturnedInResponse(response, SLEEP_TIME_MILLIS, upstreamSpanInfo.getLeft());
     }
 
@@ -230,8 +229,37 @@ public class RequestTracingFilterComponentTest {
     }
 
     @DataProvider(value = {
-            "true",
-            "false"
+        "true",
+        "false"
+    })
+    @Test
+    public void verify_wildcard_endpoint_traced_correctly(boolean upstreamSendsSpan) {
+        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
+                                                           ? generateUpstreamSpanHeaders()
+                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+
+        ExtractableResponse response =
+            given()
+                .baseUri("http://localhost")
+                .port(port)
+                .headers(upstreamSpanInfo.getRight())
+                .log().all()
+            .when()
+                .get(WILDCARD_PATH_PREFIX + "/" + UUID.randomUUID().toString() + "?foo=" + UUID.randomUUID().toString())
+            .then()
+                .log().all()
+                .extract();
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.asString()).isEqualTo(WILDCARD_RESULT);
+        verifySingleSpanCompletedAndReturnedInResponse(response, SLEEP_TIME_MILLIS, upstreamSpanInfo.getLeft());
+        Span completedSpan = spanRecorder.completedSpans.get(0);
+        assertThat(completedSpan.getSpanName()).isEqualTo(WILDCARD_PATH_PREFIX);
+    }
+
+    @DataProvider(value = {
+    		"true",
+    		"false"
     })
     @Test
     public void verify_tags_set(boolean isError) {
@@ -351,6 +379,7 @@ public class RequestTracingFilterComponentTest {
         contextHandler.addServlet(BlockingForwardServlet.class, BLOCKING_FORWARD_PATH);
         contextHandler.addServlet(AsyncForwardServlet.class, ASYNC_FORWARD_PATH);
         contextHandler.addServlet(AsyncErrorServlet.class, ASYNC_ERROR_PATH);
+        contextHandler.addServlet(WildcardServlet.class, WILDCARD_PATH);
         contextHandler.addFilter(RequestTracingFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
         return contextHandler;
     }
@@ -364,6 +393,10 @@ public class RequestTracingFilterComponentTest {
     private static final String BLOCKING_FORWARD_PATH = "/blockingForward";
     private static final String ASYNC_FORWARD_PATH = "/asyncForward";
     private static final String ASYNC_ERROR_PATH = "/asyncError";
+
+    private static final String WILDCARD_PATH_PREFIX = "/wildcard";
+    private static final String WILDCARD_PATH = WILDCARD_PATH_PREFIX + "/*";
+    private static final String WILDCARD_RESULT = "wildcard endpoint hit - " + UUID.randomUUID().toString();
 
     private static final int SLEEP_TIME_MILLIS = 50;
 
@@ -438,6 +471,18 @@ public class RequestTracingFilterComponentTest {
 
             final AsyncContext asyncContext = request.startAsync(request, response);
             asyncContext.setTimeout(SLEEP_TIME_MILLIS);
+        }
+
+    }
+
+    public static class WildcardServlet extends HttpServlet {
+
+        public void doGet(
+            HttpServletRequest request, HttpServletResponse response
+        ) throws ServletException, IOException {
+            sleepThread(SLEEP_TIME_MILLIS);
+            response.getWriter().print(WILDCARD_RESULT);
+            response.flushBuffer();
         }
 
     }

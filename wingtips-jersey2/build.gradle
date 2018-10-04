@@ -1,0 +1,32 @@
+evaluationDependsOn(':')
+
+compileTestJava {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+ext {
+//    servletApiForTestsVersion = '3.1.0'
+}
+
+dependencies {
+    compile(
+            project(":wingtips-core")
+    )
+    compileOnly(
+            "org.glassfish.jersey.core:jersey-server:$jersey2Version"
+    )
+    testCompile(
+            project(":wingtips-servlet-api"),
+            "junit:junit-dep:$junitVersion",
+            "org.mockito:mockito-core:$mockitoVersion",
+            "ch.qos.logback:logback-classic:$logbackVersion",
+            "org.assertj:assertj-core:$assertJVersion",
+            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
+            "io.rest-assured:rest-assured:$restAssuredVersion",
+//            "javax.servlet:javax.servlet-api:$servletApiForTestsVersion",
+            "org.glassfish.jersey.containers:jersey-container-servlet:$jersey2Version",
+            "org.eclipse.jetty:jetty-server:$jettyVersion",
+            "org.eclipse.jetty:jetty-servlet:$jettyVersion"
+    )
+}

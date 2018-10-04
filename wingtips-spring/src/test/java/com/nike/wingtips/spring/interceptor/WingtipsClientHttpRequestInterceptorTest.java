@@ -5,7 +5,8 @@ import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.spring.testutils.TestUtils.SpanRecorder;
 import com.nike.wingtips.spring.util.HttpRequestWrapperWithModifiableHeaders;
-import com.nike.wingtips.tags.HttpTagStrategy;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.KnownOpenTracingTags;
 import com.nike.wingtips.util.TracingState;
 
@@ -355,13 +356,13 @@ public class WingtipsClientHttpRequestInterceptorTest {
         boolean tagsExpected = false; // We don't expect any tags present
         boolean subspanOptionOn = true; // Required to be true for the tag strategy to be used
         boolean currentSpanExists = false;  // We're indifferent on this value
-        HttpTagStrategy<HttpRequest, ClientHttpResponse> explodingTagStrategy = mock(HttpTagStrategy.class);
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithRequestAttributes(any(Span.class), any(HttpRequest.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithResponseAttributes(any(Span.class), any(ClientHttpResponse.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleErroredRequest(any(Span.class), any(Throwable.class));
+        HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> explodingTagStrategy = mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> tagAdapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleRequestTagging(any(Span.class), any(HttpRequest.class), any(HttpTagAndSpanNamingAdapter.class));
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleResponseTaggingAndFinalSpanName(any(Span.class), any(HttpRequest.class), any(ClientHttpResponse.class), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class));
 
         // given
-        WingtipsClientHttpRequestInterceptor interceptor = new WingtipsClientHttpRequestInterceptor(subspanOptionOn, explodingTagStrategy);
+        WingtipsClientHttpRequestInterceptor interceptor = new WingtipsClientHttpRequestInterceptor(subspanOptionOn, explodingTagStrategy, tagAdapterMock);
         
         // then
         execute_and_validate_intercept_worked_as_expected(interceptor, currentSpanExists, subspanOptionOn, responseStatus, tagsExpected);
@@ -388,7 +389,7 @@ public class WingtipsClientHttpRequestInterceptorTest {
         doReturn(method).when(httpRequest).getMethod();
 
         // when
-        String result = interceptorSpy.getSubspanSpanName(httpRequest);
+        String result = interceptorSpy.getSubspanSpanName(httpRequest, null, null);
 
         // then
         assertThat(result).isEqualTo("resttemplate_downstream_call-" + method.name() + "_" + noQueryStringUri);

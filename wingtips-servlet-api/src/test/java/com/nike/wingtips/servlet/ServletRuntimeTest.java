@@ -1,12 +1,18 @@
 package com.nike.wingtips.servlet;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import com.nike.wingtips.servlet.ServletRuntime.Servlet2Runtime;
+import com.nike.wingtips.servlet.ServletRuntime.Servlet3Runtime;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.util.TracingState;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,18 +23,15 @@ import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-
-import com.nike.wingtips.servlet.ServletRuntime.Servlet2Runtime;
-import com.nike.wingtips.servlet.ServletRuntime.Servlet3Runtime;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.util.TracingState;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * Tests the functionality of {@link ServletRuntime}.
@@ -42,6 +45,7 @@ public class ServletRuntimeTest {
     private Servlet3Runtime servlet3Runtime;
 
     private HttpServletRequest requestMock;
+    private HttpServletResponse responseMock;
 
     @Before
     public void beforeMethod() {
@@ -49,6 +53,7 @@ public class ServletRuntimeTest {
         servlet3Runtime = new Servlet3Runtime();
 
         requestMock = mock(HttpServletRequest.class);
+        responseMock = mock(HttpServletResponse.class);
     }
 
     @DataProvider(value = {
@@ -118,7 +123,13 @@ public class ServletRuntimeTest {
     ) throws ServletException, IOException {
         // when
         Throwable ex = catchThrowable(
-            () -> servlet2Runtime.setupTracingCompletionWhenAsyncRequestCompletes(requestMock, mock(TracingState.class), mock(HttpTagStrategy.class))
+            () -> servlet2Runtime.setupTracingCompletionWhenAsyncRequestCompletes(
+                requestMock,
+                responseMock,
+                mock(TracingState.class),
+                mock(HttpTagAndSpanNamingStrategy.class),
+                mock(HttpTagAndSpanNamingAdapter.class)
+            )
         );
 
         // then
@@ -170,11 +181,17 @@ public class ServletRuntimeTest {
         AsyncContext asyncContextMock = mock(AsyncContext.class);
         doReturn(asyncContextMock).when(requestMock).getAsyncContext();
         TracingState tracingStateMock = mock(TracingState.class);
+        HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategyMock =
+            mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapterMock =
+            mock(HttpTagAndSpanNamingAdapter.class);
 
         ArgumentCaptor<AsyncListener> listenerCaptor = ArgumentCaptor.forClass(AsyncListener.class);
 
         // when
-        servlet3Runtime.setupTracingCompletionWhenAsyncRequestCompletes(requestMock, tracingStateMock, null);
+        servlet3Runtime.setupTracingCompletionWhenAsyncRequestCompletes(
+            requestMock, responseMock, tracingStateMock, tagStrategyMock, tagAdapterMock
+        );
 
         // then
         verify(asyncContextMock).addListener(listenerCaptor.capture());

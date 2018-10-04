@@ -1,28 +1,14 @@
 package com.nike.wingtips.apache.httpclient;
 
-import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
-import static com.nike.wingtips.TraceHeaders.SPAN_ID;
-import static com.nike.wingtips.TraceHeaders.TRACE_ID;
-import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
-import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.DEFAULT_REQUEST_IMPL;
-import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.DEFAULT_RESPONSE_IMPL;
-import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.SPAN_TO_CLOSE_HTTP_CONTEXT_ATTR_KEY;
-import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.addTracingInterceptors;
-import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Span.SpanPurpose;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.KnownOpenTracingTags;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
@@ -42,15 +28,29 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.slf4j.MDC;
-import org.springframework.http.client.ClientHttpResponse;
 
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Span.SpanPurpose;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.tags.KnownOpenTracingTags;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+
+import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
+import static com.nike.wingtips.TraceHeaders.SPAN_ID;
+import static com.nike.wingtips.TraceHeaders.TRACE_ID;
+import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
+import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.DEFAULT_REQUEST_IMPL;
+import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.DEFAULT_RESPONSE_IMPL;
+import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.SPAN_TO_CLOSE_HTTP_CONTEXT_ATTR_KEY;
+import static com.nike.wingtips.apache.httpclient.WingtipsApacheHttpClientInterceptor.addTracingInterceptors;
+import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests the functionality of {@link WingtipsApacheHttpClientInterceptor}.
@@ -166,13 +166,15 @@ public class WingtipsApacheHttpClientInterceptorTest {
         // given
         boolean subspanOptionOn = true;
         boolean tagsExpected = false; // With all calls exploding we don't expect anything to be tagged
-        HttpTagStrategy<HttpRequest, HttpResponse> explodingTagStrategy = mock(HttpTagStrategy.class);
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithRequestAttributes(any(Span.class), any(HttpRequest.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithResponseAttributes(any(Span.class), any(HttpResponse.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleErroredRequest(any(Span.class), any(Throwable.class));
-        
+        HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> explodingTagStrategy = mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> tagAdapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleRequestTagging(any(Span.class), any(HttpRequest.class), tagAdapterMock);
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleResponseTaggingAndFinalSpanName(any(Span.class), any(HttpRequest.class), any(HttpResponse.class), any(Throwable.class), tagAdapterMock);
+
         // when 
-        WingtipsApacheHttpClientInterceptor interceptor = new WingtipsApacheHttpClientInterceptor(subspanOptionOn, explodingTagStrategy);
+        WingtipsApacheHttpClientInterceptor interceptor = new WingtipsApacheHttpClientInterceptor(
+            subspanOptionOn, explodingTagStrategy, tagAdapterMock
+        );
         
         // then
         execute_and_validate_request_works_as_expected(interceptor, subspanOptionOn, parentSpanExists, responseCode, tagsExpected);
@@ -202,7 +204,7 @@ public class WingtipsApacheHttpClientInterceptorTest {
             }
 
             assertThat(spanSetOnHttpContext.getSpanPurpose()).isEqualTo(SpanPurpose.CLIENT);
-            assertThat(spanSetOnHttpContext.getSpanName()).isEqualTo(interceptor.getSubspanSpanName(requestMock));
+            assertThat(spanSetOnHttpContext.getSpanName()).isEqualTo(interceptor.getSubspanSpanName(requestMock, null, null));
             
             if (tagsExpected) {
                 //Validate open tracing tags are set
@@ -282,7 +284,7 @@ public class WingtipsApacheHttpClientInterceptorTest {
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + noQueryStringUri;
 
         // when
-        String result = interceptor.getSubspanSpanName(requestMock);
+        String result = interceptor.getSubspanSpanName(requestMock, null, null);
 
         // then
         assertThat(result).isEqualTo(expectedResult);
@@ -316,7 +318,7 @@ public class WingtipsApacheHttpClientInterceptorTest {
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + host + noQueryStringRelativeUri;
 
         // when
-        String result = interceptor.getSubspanSpanName(reqWrapperMock);
+        String result = interceptor.getSubspanSpanName(reqWrapperMock, null, null);
 
         // then
         assertThat(result).isEqualTo(expectedResult);

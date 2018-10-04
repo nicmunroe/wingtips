@@ -1,35 +1,89 @@
 package com.nike.wingtips.tags;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.eq;
+import com.nike.wingtips.Span;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.nike.wingtips.Span;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @RunWith(DataProviderRunner.class)
 public class OpenTracingTagStrategyTest {
 
-    private Map<String,String> spanTags = new HashMap<String,String>();
-
-    private Span spanMock;
-    private Object nullObj = null; // No need for this to have a value
-
-    private boolean isErroredResponse;
-    final String responseStatus = "200";
+    final Integer responseStatus = 200;
     final String httpUrl = "/endpoint";
     final String httpMethod = "GET";
+    private Map<String, String> spanTags = new HashMap<>();
+    private Span spanMock;
+    private Object nullObj = null; // No need for this to have a value
+    private String errorResponseTagValue = null;
+    private HttpTagAndSpanNamingAdapter<Object, Object> tagAdapter = new HttpTagAndSpanNamingAdapter<Object, Object>() {
+
+        @Override
+        public @Nullable String getErrorResponseTagValue(@Nullable Object response) {
+            return errorResponseTagValue;
+        }
+
+        @Override
+        public @Nullable Integer getResponseHttpStatus(@Nullable Object response) {
+            return responseStatus;
+        }
+
+        @Override
+        public @Nullable String getRequestHttpMethod(@Nullable Object request) {
+            return httpMethod;
+        }
+
+        @Override
+        public @Nullable String getHeaderSingleValue(@Nullable Object request, @NotNull String headerKey) {
+            // TODO: This
+            return null;
+        }
+
+        @Override
+        public @Nullable List<String> getHeaderMultipleValue(@Nullable Object request, @NotNull String headerKey) {
+            // TODO: This
+            return null;
+        }
+
+        @Override
+        public @Nullable String getRequestUriPathTemplate(@Nullable Object request, @Nullable Object response) {
+            // TODO: This
+            return null;
+        }
+
+        @Override
+        public @Nullable String getRequestUrl(@Nullable Object request) {
+            return httpUrl;
+        }
+
+        @Override
+        public @Nullable String getRequestPath(@Nullable Object request) {
+            return null;
+        }
+
+        public @Nullable String getSpanHandlerTagValue(@Nullable Object request, @Nullable Object response) {
+            // TODO: this
+            return null;
+        }
+
+    };
+    private OpenTracingTagStrategy<Object, Object> openTracingTagStrategy = new OpenTracingTagStrategy<>();
 
     @Before
     public void setup() {
@@ -40,24 +94,25 @@ public class OpenTracingTagStrategyTest {
     }
 
     @DataProvider(value = {
-            "true",
-            "false"
+        "foobar",
+        "null"
     }, splitBy = "\\|")
     @Test
-    public void tagspanwithresponseattributes_behaves_as_expected(boolean isErroredResponse) {
+    public void tagspanwithresponseattributes_behaves_as_expected(String adapterErrorResponseTagValue) {
         // given
-        this.isErroredResponse = isErroredResponse;
+        this.errorResponseTagValue = adapterErrorResponseTagValue;
 
         // when
-        openTracingTagStrategy.tagSpanWithResponseAttributes(spanMock, nullObj);
+        openTracingTagStrategy.doHandleResponseAndErrorTagging(spanMock, nullObj, nullObj, null, tagAdapter);
 
         // then
-        verify(spanMock).putTag(eq(KnownOpenTracingTags.HTTP_STATUS), eq(responseStatus));
+        verify(spanMock).putTag(eq(KnownOpenTracingTags.HTTP_STATUS), eq(responseStatus.toString()));
 
-        if(isErroredResponse) {
+        if (adapterErrorResponseTagValue != null) {
             // the error tag should only have a value if isErroredResponse is true
-            verify(spanMock).putTag(eq(KnownOpenTracingTags.ERROR), eq("true"));
-        } else {
+            verify(spanMock).putTag(eq(KnownOpenTracingTags.ERROR), eq(adapterErrorResponseTagValue));
+        }
+        else {
             // there shouldn't be any value for the error tag
             verify(spanMock, never()).putTag(eq(KnownOpenTracingTags.ERROR), any(String.class));
         }
@@ -66,41 +121,10 @@ public class OpenTracingTagStrategyTest {
     @Test
     public void tagspanwithrequestattributes_behaves_as_expected() {
         // when
-        openTracingTagStrategy.tagSpanWithRequestAttributes(spanMock, nullObj);
+        openTracingTagStrategy.doHandleRequestTagging(spanMock, nullObj, tagAdapter);
 
         // then
         verify(spanMock).putTag(eq(KnownOpenTracingTags.HTTP_METHOD), eq(httpMethod));
         verify(spanMock).putTag(eq(KnownOpenTracingTags.HTTP_URL), eq(httpUrl));
     }
-
-    private HttpTagAdapter<Object,Object> tagAdapter = new HttpTagAdapter<Object,Object>() {
-
-        @Override
-        public boolean isErrorResponse(Object response) {
-            return isErroredResponse;
-        }
-
-        @Override
-        public String getResponseHttpStatus(Object response) {
-            return responseStatus;
-        }
-
-        @Override
-        public String getRequestHttpMethod(Object request) {
-            return httpMethod;
-        }
-
-        @Override
-        public String getRequestUrl(Object request) {
-            return httpUrl;
-        }
-
-        @Override
-        public String getRequestUri(Object request) {
-            return null;
-        }
-
-    };
-
-    private OpenTracingTagStrategy<Object,Object> openTracingTagStrategy = new OpenTracingTagStrategy<Object,Object>(tagAdapter);
 }

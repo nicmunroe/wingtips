@@ -9,7 +9,8 @@ import com.nike.wingtips.spring.interceptor.WingtipsClientHttpRequestInterceptor
 import com.nike.wingtips.spring.util.asynchelperwrapper.FailureCallbackWithTracing;
 import com.nike.wingtips.spring.util.asynchelperwrapper.ListenableFutureCallbackWithTracing;
 import com.nike.wingtips.spring.util.asynchelperwrapper.SuccessCallbackWithTracing;
-import com.nike.wingtips.tags.HttpTagStrategy;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.util.TracingState;
 
 import org.slf4j.MDC;
@@ -66,17 +67,23 @@ public class WingtipsSpringUtil {
         );
         return restTemplate;
     }
-    
+
+    // TODO: builder instead of yet-another-factory-method?
+
     /**
      * @param tagStrategy The tagging strategy to be used to tag request/response metadata to the subspan
      * @return A new {@link RestTemplate} instance with a {@link WingtipsClientHttpRequestInterceptor}
-     * already added and with the subspan option on and a {@code HttpTagStrategy} for appending the request/response metadata
+     * already added and with the subspan option on and a {@code HttpTagAndSpanNamingStrategy} for appending the request/response metadata
      * to the subspan
      */
-    public static RestTemplate createTracingEnabledRestTemplate(HttpTagStrategy<HttpRequest, ClientHttpResponse> tagStrategy) {
+    public static RestTemplate createTracingEnabledRestTemplate(
+        boolean surroundCallsWithSubspan,
+        HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> tagAdapter
+    ) {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add(
-            new WingtipsClientHttpRequestInterceptor(true, tagStrategy)
+            new WingtipsClientHttpRequestInterceptor(surroundCallsWithSubspan, tagStrategy, tagAdapter)
         );
         return restTemplate;
     }
@@ -104,6 +111,8 @@ public class WingtipsSpringUtil {
         );
         return asyncRestTemplate;
     }
+
+    // TODO: builder instead of yet-another-factory-method?
     
     /**
      * @param tagStrategy The tagging strategy to be used to tag request/response metadata to the subspan
@@ -111,10 +120,14 @@ public class WingtipsSpringUtil {
      * already added and with the subspan option on and a tag strategy for appending the request/response metadata
      * to the subspan
      */
-    public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate(HttpTagStrategy<HttpRequest, ClientHttpResponse> tagStrategy) {
+    public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate(
+        boolean surroundCallsWithSubspan,
+        HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> tagAdapter
+    ) {
         AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate();
         asyncRestTemplate.getInterceptors().add(
-            new WingtipsAsyncClientHttpRequestInterceptor(true, tagStrategy)
+            new WingtipsAsyncClientHttpRequestInterceptor(surroundCallsWithSubspan, tagStrategy, tagAdapter)
         );
         return asyncRestTemplate;
     }

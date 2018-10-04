@@ -1,15 +1,19 @@
 package com.nike.wingtips.servlet;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.util.TracingState;
+
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,19 +24,16 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.assertj.core.api.ThrowableAssert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.slf4j.MDC;
-
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.util.TracingState;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * Verifies the functionality of {@link WingtipsRequestSpanCompletionAsyncListener}.
@@ -47,7 +48,8 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
     private Span tracingStateSpan;
     private AsyncEvent asyncEventMock;
     private HttpServletResponse responseMock;
-    private HttpTagStrategy<HttpServletRequest,HttpServletResponse> tagStrategyMock;
+    private HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategyMock;
+    private HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapterMock;
     private Throwable exception;
 
     @Before
@@ -56,8 +58,9 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         tracingState = TracingState.getCurrentThreadTracingState();
         assertThat(tracingState.spanStack).hasSize(1);
         tracingStateSpan = tracingState.spanStack.peek();
-        tagStrategyMock = mock(HttpTagStrategy.class);
-        implSpy = spy(new WingtipsRequestSpanCompletionAsyncListener(tracingState, tagStrategyMock));
+        tagStrategyMock = mock(HttpTagAndSpanNamingStrategy.class);
+        tagAdapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+        implSpy = spy(new WingtipsRequestSpanCompletionAsyncListener(tracingState, tagStrategyMock, tagAdapterMock));
         asyncEventMock = mock(AsyncEvent.class);
         responseMock = mock(HttpServletResponse.class);
         exception = new Exception("Kaboom");
@@ -89,7 +92,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
         // when
         WingtipsRequestSpanCompletionAsyncListener impl =
-            new WingtipsRequestSpanCompletionAsyncListener(tracingStateMock, tagStrategyMock);
+            new WingtipsRequestSpanCompletionAsyncListener(tracingStateMock, tagStrategyMock, tagAdapterMock);
 
         // then
         assertThat(impl.originalRequestTracingState).isSameAs(tracingStateMock);
@@ -104,8 +107,11 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
         // then
         verify(implSpy).onComplete(asyncEventMock);
-        verify(implSpy).tagSpanWithResponseAttributesAndComplete(responseMock);
-        verify(tagStrategyMock).tagSpanWithResponseAttributes(any(Span.class), any(HttpServletResponse.class));
+        verify(implSpy).completeRequestSpan(asyncEventMock);
+        verify(tagStrategyMock).handleResponseTaggingAndFinalSpanName(
+            any(Span.class), any(HttpServletRequest.class), any(HttpServletResponse.class), any(Throwable.class),
+            eq(tagAdapterMock)
+        );
         verifyNoMoreInteractions(implSpy);
     }
 
@@ -116,8 +122,11 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
         // then
         verify(implSpy).onTimeout(asyncEventMock);
-        verify(implSpy).tagCurrentSpanAsErrdAndComplete(any(Throwable.class));
-        verify(tagStrategyMock).handleErroredRequest(any(Span.class), any(Throwable.class));
+        verify(implSpy).completeRequestSpan(asyncEventMock);
+        verify(tagStrategyMock).handleResponseTaggingAndFinalSpanName(
+            any(Span.class), any(HttpServletRequest.class), any(HttpServletResponse.class), any(Throwable.class),
+            eq(tagAdapterMock)
+        );
         verifyNoMoreInteractions(implSpy);
     }
 
@@ -128,8 +137,11 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
         // then
         verify(implSpy).onError(asyncEventMock);
-        verify(implSpy).tagCurrentSpanAsErrdAndComplete(any(Throwable.class));
-        verify(tagStrategyMock).handleErroredRequest(any(Span.class), eq(exception));
+        verify(implSpy).completeRequestSpan(asyncEventMock);
+        verify(tagStrategyMock).handleResponseTaggingAndFinalSpanName(
+            any(Span.class), any(HttpServletRequest.class), any(HttpServletResponse.class), any(Throwable.class),
+            eq(tagAdapterMock)
+        );
         verifyNoMoreInteractions(implSpy);
     }
 
@@ -171,7 +183,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         assertThat(implSpy.alreadyCompleted.get()).isFalse();
 
         // when
-        implSpy.tagSpanWithResponseAttributesAndComplete(responseMock);
+        implSpy.completeRequestSpan(asyncEventMock);
 
         // then
         assertThat(spanRecorder.completedSpans).hasSize(1);
@@ -179,7 +191,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         assertThat(completedSpan).isSameAs(tracingStateSpan);
         assertThat(tracingStateSpan.isCompleted()).isTrue();
         assertThat(implSpy.alreadyCompleted.get()).isTrue();
-        verify(tagStrategyMock).tagSpanWithResponseAttributes(any(Span.class), any(HttpServletResponse.class));
+        verify(tagStrategyMock).handleResponseTaggingAndFinalSpanName(any(Span.class), any(HttpServletRequest.class), any(HttpServletResponse.class), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class));
 
         // Tracing state got reset back to original from when the method was called.
         assertThat(TracingState.getCurrentThreadTracingState()).isEqualTo(unrelatedThreadTracingState);
@@ -203,12 +215,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         assertThat(implSpy.alreadyCompleted.get()).isFalse();
 
         // when
-        Throwable actualEx = catchThrowable(new ThrowableAssert.ThrowingCallable() {
-            @Override
-            public void call() throws Throwable {
-                implSpy.tagSpanWithResponseAttributesAndComplete(responseMock);
-            }
-        });
+        Throwable actualEx = catchThrowable(() -> implSpy.completeRequestSpan(asyncEventMock));
 
         // then
         assertThat(actualEx).isSameAs(expectedExplosion);
@@ -227,7 +234,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         assertThat(tracingStateSpan.isCompleted()).isFalse();
 
         // when
-        implSpy.tagSpanWithResponseAttributesAndComplete(responseMock);
+        implSpy.completeRequestSpan(asyncEventMock);
 
         // then
         assertThat(tracingStateSpan.isCompleted()).isFalse();
@@ -237,45 +244,10 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
     @Test
     public void completeRequestSpan_completes_span_when_tagstrategy_fails() {
         // given
-        doThrow(new RuntimeException("boom")).when(tagStrategyMock).tagSpanWithResponseAttributes(any(Span.class), any(HttpServletResponse.class));
+        doThrow(new RuntimeException("boom")).when(tagStrategyMock).handleResponseTaggingAndFinalSpanName(any(Span.class), any(HttpServletRequest.class), any(HttpServletResponse.class), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class));
 
         // then
         completeRequestSpan_completes_request_span_as_expected();
-    }
-    
-    @Test
-    public void completeErroredRequestSpan_completes_span_when_tagstrategy_fails() {
-        // given
-        doThrow(new RuntimeException("boom")).when(tagStrategyMock).handleErroredRequest(any(Span.class), any(Throwable.class));
-
-        // then
-        completeRequestSpan_marks_listener_as_completed_even_if_unexpected_exception_occurs();
-    }
-    
-    @Test
-    public void tagCurrentSpanAsErrdAndComplete_completes_request_span_as_expected() {
-        // given
-        Tracer.getInstance().startRequestWithRootSpan("someOtherUnrelatedSpan");
-        TracingState unrelatedThreadTracingState = TracingState.getCurrentThreadTracingState();
-        SpanRecorder spanRecorder = new SpanRecorder();
-        Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
-        assertThat(tracingStateSpan.isCompleted()).isFalse();
-        assertThat(implSpy.alreadyCompleted.get()).isFalse();
-
-        Throwable exception = new RuntimeException("boom");
-        // when
-        implSpy.tagCurrentSpanAsErrdAndComplete(exception);
-
-        // then
-        assertThat(spanRecorder.completedSpans).hasSize(1);
-        Span completedSpan = spanRecorder.completedSpans.get(0);
-        assertThat(completedSpan).isSameAs(tracingStateSpan);
-        assertThat(tracingStateSpan.isCompleted()).isTrue();
-        assertThat(implSpy.alreadyCompleted.get()).isTrue();
-        verify(tagStrategyMock).handleErroredRequest(any(Span.class), eq(exception));
-
-        // Tracing state got reset back to original from when the method was called.
-        assertThat(TracingState.getCurrentThreadTracingState()).isEqualTo(unrelatedThreadTracingState);
     }
 
     public static class SpanRecorder implements SpanLifecycleListener {

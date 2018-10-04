@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     </li>
  *     <li>
  *         wingtips.server-side-span-tagging-strategy - Determines the set of tags Wingtips will apply to spans. Represents the
- *         {@link com.nike.wingtips.tag.HttpTagStrategy} implementation. Must be one of: ZIPKIN, OPENTRACING, or NONE. 
+ *         {@link com.nike.wingtips.tag.HttpTagAndSpanNamingStrategy} implementation. Must be one of: ZIPKIN, OPENTRACING, or NONE.
  *         If missing then the default strategy will not be changed (defaults to OPENTRACING).
  *     </li>
  * </ul>

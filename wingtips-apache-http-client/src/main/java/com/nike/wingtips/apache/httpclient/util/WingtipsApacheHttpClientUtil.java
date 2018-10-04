@@ -68,6 +68,7 @@ public class WingtipsApacheHttpClientUtil {
             uri = wrapper.getTarget().toURI() + uri;
         }
 
+        // TODO: Do we want the prefix here?
         return HttpRequestTracingUtils.getSubspanSpanNameForHttpRequest(
             "apachehttpclient_downstream_call", requestLine.getMethod(), uri
         );

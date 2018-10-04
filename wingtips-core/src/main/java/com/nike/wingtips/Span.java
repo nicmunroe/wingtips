@@ -53,7 +53,7 @@ public class Span implements Closeable {
     private final String traceId;
     private final String spanId;
     private final String parentSpanId;
-    private final String spanName;
+    private String spanName;
     private final boolean sampleable;
     private final String userId;
     private final SpanPurpose spanPurpose;
@@ -257,6 +257,10 @@ public class Span implements Closeable {
         return spanName;
     }
 
+    /*package*/ void setSpanName(String newName) {
+        this.spanName = newName;
+    }
+
     /**
      * @return True if this span is sampleable and should be output to the logging/span collection system, false otherwise.
      */
@@ -305,7 +309,7 @@ public class Span implements Closeable {
      * <p/>
      * NOTE: This is intentionally package scoped to make sure completions and logging/span output logic happens centrally through {@link Tracer}.
      */
-    void complete() {
+    /*package*/ void complete() {
         if (this.durationNanos != null)
             throw new IllegalStateException("This Span is already completed.");
 

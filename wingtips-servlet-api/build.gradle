@@ -12,6 +12,7 @@ dependencies {
     )
     compileOnly(
             "javax.servlet:javax.servlet-api:$servletApiVersion",
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             'io.zipkin.brave:brave:5.2.0',
             'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
     )
@@ -22,13 +23,8 @@ dependencies {
             "org.assertj:assertj-core:$assertJVersion",
             "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
-            "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+            "org.eclipse.jetty:jetty-webapp:$jettyVersion",
+            'io.zipkin.brave:brave:5.2.0',
+            'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
     )
-jacocoTestReport {
-    reports {
-        xml.enabled false
-        csv.enabled false
-        html.destination file("${buildDir}/jacocoHtml")
-    }
-}
 }

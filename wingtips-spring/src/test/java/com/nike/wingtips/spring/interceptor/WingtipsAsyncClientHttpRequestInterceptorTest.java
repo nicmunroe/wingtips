@@ -1,23 +1,17 @@
 package com.nike.wingtips.spring.interceptor;
 
-import static com.nike.wingtips.spring.testutils.TestUtils.getExpectedSpanForHeaders;
-import static com.nike.wingtips.spring.testutils.TestUtils.normalizeTracingState;
-import static com.nike.wingtips.spring.testutils.TestUtils.resetTracing;
-import static com.nike.wingtips.spring.testutils.TestUtils.verifyExpectedTracingHeaders;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import com.nike.wingtips.Span;
+import com.nike.wingtips.Span.SpanPurpose;
+import com.nike.wingtips.Tracer;
+import com.nike.wingtips.spring.testutils.TestUtils.SpanRecorder;
+import com.nike.wingtips.spring.util.HttpRequestWrapperWithModifiableHeaders;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.KnownOpenTracingTags;
+import com.nike.wingtips.util.TracingState;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.UUID;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 import org.junit.After;
 import org.junit.Before;
@@ -32,16 +26,24 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.SettableListenableFuture;
 
-import com.nike.wingtips.Span;
-import com.nike.wingtips.Span.SpanPurpose;
-import com.nike.wingtips.Tracer;
-import com.nike.wingtips.spring.testutils.TestUtils.SpanRecorder;
-import com.nike.wingtips.spring.util.HttpRequestWrapperWithModifiableHeaders;
-import com.nike.wingtips.tags.HttpTagStrategy;
-import com.nike.wingtips.tags.KnownOpenTracingTags;
-import com.nike.wingtips.util.TracingState;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import java.io.IOException;
+import java.net.URI;
+import java.util.UUID;
+
+import static com.nike.wingtips.spring.testutils.TestUtils.getExpectedSpanForHeaders;
+import static com.nike.wingtips.spring.testutils.TestUtils.normalizeTracingState;
+import static com.nike.wingtips.spring.testutils.TestUtils.resetTracing;
+import static com.nike.wingtips.spring.testutils.TestUtils.verifyExpectedTracingHeaders;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests the functionality of {@link WingtipsAsyncClientHttpRequestInterceptor}.
@@ -369,13 +371,13 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         boolean currentSpanExists = false;
         boolean subspanOptionOn = true;
         boolean tagsExpected = false; // With all calls exploding we don't expect anything to be tagged
-        HttpTagStrategy<HttpRequest, ClientHttpResponse> explodingTagStrategy = mock(HttpTagStrategy.class);
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithRequestAttributes(any(Span.class), any(HttpRequest.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).tagSpanWithResponseAttributes(any(Span.class), any(ClientHttpResponse.class));
-        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleErroredRequest(any(Span.class), any(Throwable.class));
-        
+        HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> explodingTagStrategy = mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> tagAdapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleRequestTagging(any(Span.class), any(HttpRequest.class), any(HttpTagAndSpanNamingAdapter.class));
+        doThrow(new RuntimeException("boom")).when(explodingTagStrategy).handleResponseTaggingAndFinalSpanName(any(Span.class), any(HttpRequest.class), any(ClientHttpResponse.class), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class));
+
         // when
-        WingtipsAsyncClientHttpRequestInterceptor explodingTagStrategyInterceptor = new WingtipsAsyncClientHttpRequestInterceptor(true, explodingTagStrategy);
+        WingtipsAsyncClientHttpRequestInterceptor explodingTagStrategyInterceptor = new WingtipsAsyncClientHttpRequestInterceptor(true, explodingTagStrategy, tagAdapterMock);
            
         // then
         intercept_worked_as_expected(explodingTagStrategyInterceptor, currentSpanExists, subspanOptionOn, responseFutureResult, tagsExpected);
@@ -402,7 +404,7 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         doReturn(method).when(httpRequest).getMethod();
 
         // when
-        String result = interceptorSpy.getSubspanSpanName(httpRequest);
+        String result = interceptorSpy.getSubspanSpanName(httpRequest, null, null);
 
         // then
         assertThat(result).isEqualTo("asyncresttemplate_downstream_call-" + method.name() + "_" + noQueryStringUri);

@@ -11,6 +11,7 @@ dependencies {
     )
     compileOnly(
             "org.springframework:spring-web:$springVersion",
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             'io.zipkin.brave:brave-instrumentation-spring-web:5.2.0'
     )
     testCompile(

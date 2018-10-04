@@ -1,10 +1,12 @@
 package com.nike.wingtips.servlet;
 
+import com.nike.internal.util.StringUtils;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.TraceHeaders;
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
-import com.nike.wingtips.tags.HttpTagStrategy;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
+import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpTagStrategy;
 import com.nike.wingtips.tags.OpenTracingTagStrategy;
 import com.nike.wingtips.tags.ZipkinTagStrategy;
@@ -18,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.naming.NameNotFoundException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -46,6 +47,7 @@ import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.unlinkTracingFromC
  */
 @SuppressWarnings("WeakerAccess")
 public class RequestTracingFilter implements Filter {
+
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
@@ -77,18 +79,22 @@ public class RequestTracingFilter implements Filter {
      * expected to be a comma-delimited list.
      */
     public static final String USER_ID_HEADER_KEYS_LIST_INIT_PARAM_NAME = "user-id-header-keys-list";
-    
+
     public static final String TAG_STRATEGY_INIT_PARAM_NAME = "server-side-span-tag-strategy";
+
+    public static final String TAG_ADAPTER_INIT_PARAM_NAME = "server-side-span-tag-adapter";
 
     protected ServletRuntime servletRuntime;
     protected List<String> userIdHeaderKeysFromInitParam;
 
     /**
-     * This {@code HttpTagStrategy} is responsible for tagging a span with metadata from the request and responses handled
-     * by this {@code java.servlet.Filter}. 
+     * This {@code HttpTagAndSpanNamingStrategy} is responsible for tagging a span with metadata from the request and responses handled
+     * by this {@code java.servlet.Filter}.
      */
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> tagStrategy;
-    
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategy;
+
+    protected HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> tagAdapter;
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         String userIdHeaderKeysListString = filterConfig.getInitParameter(USER_ID_HEADER_KEYS_LIST_INIT_PARAM_NAME);
@@ -101,32 +107,72 @@ public class RequestTracingFilter implements Filter {
             }
             userIdHeaderKeysFromInitParam = Collections.unmodifiableList(parsedList);
         }
-        
+
         this.tagStrategy = initializeTagStrategy(filterConfig);
+        this.tagAdapter = initializeTagAdapter(filterConfig);
     }
 
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(FilterConfig filterConfig)  {
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(
+        FilterConfig filterConfig
+    ) {
         String tagStrategyString = filterConfig.getInitParameter(TAG_STRATEGY_INIT_PARAM_NAME);
         try {
             return getTagStrategyFromName(tagStrategyString);
-        } catch(NameNotFoundException nnfe) {
-            logger.warn("Unable to match tagging strategy " + tagStrategyString + ", using default OpenTracing strategy");
-            return getOpenTracingTagStrategy();
+        } catch(Throwable t) {
+            logger.warn("Unable to match tagging strategy " + tagStrategyString + ". Using default Zipkin strategy", t);
+            return getDefaultTagStrategy();
         }
     }
 
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> getTagStrategyFromName(String strategyName) throws NameNotFoundException{
-        // Default is the opentracing strategy
-        if (strategyName == null || "opentracing".equalsIgnoreCase(strategyName)) {
-            return getOpenTracingTagStrategy(); 
-        } 
-        if("zipkin".equalsIgnoreCase(strategyName)) {
+    protected HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> initializeTagAdapter(
+        FilterConfig filterConfig
+    ) {
+        String tagAdapterString = filterConfig.getInitParameter(TAG_ADAPTER_INIT_PARAM_NAME);
+        try {
+            return getTagAdapterFromName(tagAdapterString);
+        } catch(Throwable t) {
+            logger.warn(
+                "Unable to match tagging adapter " + tagAdapterString + ". Using default ServletRequestTagAdapter",
+                t
+            );
+            return getDefaultTagAdapter();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getTagStrategyFromName(
+        String strategyName
+    ) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        // Default is the Zipkin strategy
+        if (StringUtils.isBlank(strategyName) || "zipkin".equalsIgnoreCase(strategyName)) {
             return getZipkinTagStrategy();
         }
-        if("none".equalsIgnoreCase(strategyName) || "noop".equalsIgnoreCase(strategyName)) {
-            return getNoOpStrategy();
+
+        if("opentracing".equalsIgnoreCase(strategyName)) {
+            return getOpenTracingTagStrategy();
         }
-        throw new NameNotFoundException("Unable to find tag strategy for " + strategyName);
+
+        if("none".equalsIgnoreCase(strategyName) || "noop".equalsIgnoreCase(strategyName)) {
+            return getNoOpTagStrategy();
+        }
+
+        // At this point there was no short-name match. Try instantiating it by classname.
+        return (HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse>)
+            Class.forName(strategyName).newInstance();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> getTagAdapterFromName(
+        String adapterName
+    ) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        // Default is the ServletRequestTagAdapter
+        if (StringUtils.isBlank(adapterName)) {
+            return getDefaultTagAdapter();
+        }
+
+        // There are no shortnames for the adapter like there are for strategy. Try instantiating by classname
+        return (HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse>)
+            Class.forName(adapterName).newInstance();
     }
 
     @Override
@@ -176,33 +222,44 @@ public class RequestTracingFilter implements Filter {
 
         TracingState originalThreadInfo = TracingState.getCurrentThreadTracingState();
         try {
-            Span newSpan = createNewSpanForRequest(request);
+            Span overallRequestSpan = createNewSpanForRequest(request);
 
-            addTracingInfoToRequestAttributes(newSpan, request);
+            addTracingInfoToRequestAttributes(overallRequestSpan, request);
 
             // Make sure we set the trace ID on the response header now before the response is committed (if we wait
             //      until after the filter chain then the response might already be committed, silently preventing us
             //      from setting the response header)
-            response.setHeader(TraceHeaders.TRACE_ID, newSpan.getTraceId());
+            response.setHeader(TraceHeaders.TRACE_ID, overallRequestSpan.getTraceId());
 
             TracingState originalRequestTracingState = TracingState.getCurrentThreadTracingState();
+            Throwable errorForTagging = null;
             try {
-                tagSpanWithRequestAttributes(newSpan, request);
+                tagStrategy.handleRequestTagging(overallRequestSpan, request, tagAdapter);
                 filterChain.doFilter(request, response);
             } catch(Throwable t) {
-                handleErroredRequestTags(newSpan, t);
+                errorForTagging = t;
                 throw t;
             } finally {
                 if (isAsyncRequest(request)) {
                     // Async, so we need to attach a listener to complete the original tracing state when the async
                     //      servlet request finishes.
                     // The listener will also add tags once the request is complete
-                    setupTracingCompletionWhenAsyncRequestCompletes(request, originalRequestTracingState, tagStrategy);
+                    setupTracingCompletionWhenAsyncRequestCompletes(
+                        request, response, originalRequestTracingState, tagStrategy, tagAdapter
+                    );
                 }
                 else {
-                    tagSpanWithResponseAttributes(newSpan, response);
-                    // Not async, so we need to complete the request span now.
-                    Tracer.getInstance().completeRequestSpan();
+                    // Not async, so we need to finalize and complete the request span now.
+                    try {
+                        // Handle response/error tagging and final span name.
+                        tagStrategy.handleResponseTaggingAndFinalSpanName(
+                            overallRequestSpan, request, response, errorForTagging, tagAdapter
+                        );
+                    }
+                    finally {
+                        // Complete the overall request span.
+                        Tracer.getInstance().completeRequestSpan();
+                    }
                 }
             }
         }
@@ -220,12 +277,16 @@ public class RequestTracingFilter implements Filter {
 
         if (parentSpan != null) {
             logger.debug("Found parent Span {}", parentSpan);
-            newSpan = tracer.startRequestWithChildSpan(parentSpan, HttpSpanFactory.getSpanName(request));
-        } else {
+            newSpan = tracer.startRequestWithChildSpan(
+                parentSpan,
+                getInitialSpanName(request, tagStrategy, tagAdapter)
+            );
+        }
+        else {
             newSpan = tracer.startRequestWithRootSpan(
-                    getSpanNameFromHttpServletRequest(request),
-                    HttpSpanFactory.getUserIdFromHttpServletRequest(request, getUserIdHeaderKeys())
-                    );
+                getInitialSpanName(request, tagStrategy, tagAdapter),
+                HttpSpanFactory.getUserIdFromHttpServletRequest(request, getUserIdHeaderKeys())
+            );
             logger.debug("Parent span not found, starting a new span {}", newSpan);
         }
         return newSpan;
@@ -244,9 +305,21 @@ public class RequestTracingFilter implements Filter {
 
     /**
      * @return The human-readable name to be given to a {@code Span} representing this request. The default is to use
-     *  {@code HttpSpanFactory.getSpanName(HttpServletRequest)}
+     * {@code HttpSpanFactory.getSpanName(HttpServletRequest)}
      */
-    protected String getSpanNameFromHttpServletRequest(HttpServletRequest request) {
+    protected String getInitialSpanName(
+        HttpServletRequest request,
+        HttpTagAndSpanNamingStrategy<HttpServletRequest, ?> namingStrategy,
+        HttpTagAndSpanNamingAdapter<HttpServletRequest, ?> adapter
+    ) {
+        // Try the naming strategy first.
+        String spanNameFromStrategy = namingStrategy.getInitialSpanName(request, adapter);
+
+        if (StringUtils.isNotBlank(spanNameFromStrategy)) {
+            return spanNameFromStrategy;
+        }
+
+        // The naming strategy didn't have anything for us. Fall back to something reasonable.
         return HttpSpanFactory.getSpanName(request);
     }
 
@@ -265,7 +338,8 @@ public class RequestTracingFilter implements Filter {
      * invoked in more than one thread over the course of a single request. This method should return {@code true} if
      * the filter is currently executing within an asynchronous dispatch.
      *
-     * @param request the current request
+     * @param request
+     *     the current request
      *
      * @deprecated This method is no longer used to determine whether this filter should execute, and will be removed
      * in a future update. It remains here only to prevent breaking impls that overrode the method.
@@ -274,7 +348,7 @@ public class RequestTracingFilter implements Filter {
     protected boolean isAsyncDispatch(HttpServletRequest request) {
         return getServletRuntime(request).isAsyncDispatch(request);
     }
-    
+
     /**
      * The list of header keys that will be used to search the request headers for a user ID to set on the {@link Span}
      * for the request. The user ID header keys will be searched in list order, and the first non-empty user ID header
@@ -300,8 +374,10 @@ public class RequestTracingFilter implements Filter {
      * Servlet-2-blocking-requests-only implementation will be returned. The first time this method is called the
      * result will be cached, and the cached value returned for subsequent calls.
      *
-     * @param request The concrete {@link ServletRequest} implementation use to determine the Servlet runtime
-     * environment.
+     * @param request
+     *     The concrete {@link ServletRequest} implementation use to determine the Servlet runtime
+     *     environment.
+     *
      * @return The {@link ServletRuntime} implementation appropriate for the current Servlet runtime environment.
      */
     protected ServletRuntime getServletRuntime(ServletRequest request) {
@@ -313,13 +389,15 @@ public class RequestTracingFilter implements Filter {
 
         return servletRuntime;
     }
-    
+
     /**
      * Returns the value of calling {@link ServletRuntime#isAsyncRequest(HttpServletRequest)} on the {@link
      * ServletRuntime} returned by {@link #getServletRuntime(ServletRequest)}. This method is here to allow
      * easy overriding by subclasses if needed, where {@link ServletRuntime} is not in scope.
      *
-     * @param request The request to inspect to see if it's part of an async servlet request or not.
+     * @param request
+     *     The request to inspect to see if it's part of an async servlet request or not.
+     *
      * @return the value of calling {@link ServletRuntime#isAsyncRequest(HttpServletRequest)} on the {@link
      * ServletRuntime} returned by {@link #getServletRuntime(ServletRequest)}.
      */
@@ -329,78 +407,51 @@ public class RequestTracingFilter implements Filter {
 
     /**
      * Delegates to {@link
-     * ServletRuntime#setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest, TracingState)}, with the
-     * {@link ServletRuntime} retrieved via {@link #getServletRuntime(ServletRequest)}. This method is here to
-     * allow easy overriding by subclasses if needed, where {@link ServletRuntime} is not in scope.
+     * ServletRuntime#setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest, TracingState,
+     * HttpTagAndSpanNamingStrategy, HttpTagAndSpanNamingAdapter)}, with the {@link ServletRuntime} retrieved via
+     * {@link #getServletRuntime(ServletRequest)}. This method is here to allow easy overriding by subclasses if
+     * needed, where {@link ServletRuntime} is not in scope.
      *
-     * @param asyncRequest The async servlet request (guaranteed to be async since this method will only be called when
-     * {@link #isAsyncRequest(HttpServletRequest)} returns true).
-     * @param originalRequestTracingState The {@link TracingState} that was generated when this request started, and
-     * which should be completed when the given async servlet request finishes.
-     * @param tagStrategy Once the async servlet request completes we want to tag the span with attributes from the 
-     * {@code HttpServletResponse}
-     * 
+     * @param asyncRequest
+     *     The async servlet request (guaranteed to be async since this method will only be called when
+     *     {@link #isAsyncRequest(HttpServletRequest)} returns true).
+     * @param originalRequestTracingState
+     *     The {@link TracingState} that was generated when this request started, and
+     *     which should be completed when the given async servlet request finishes.
+     * @param tagStrategy
+     *     Once the async servlet request completes we want to tag the span with attributes from the
+     *     {@code HttpServletResponse}
      */
-    protected void setupTracingCompletionWhenAsyncRequestCompletes(HttpServletRequest asyncRequest,
-                                                                   TracingState originalRequestTracingState,
-                                                                   HttpTagStrategy<HttpServletRequest, HttpServletResponse> tagStrategy) {
+    protected void setupTracingCompletionWhenAsyncRequestCompletes(
+        HttpServletRequest asyncRequest,
+        HttpServletResponse asyncResponse,
+        TracingState originalRequestTracingState,
+        HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategy,
+        HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+    ) {
         getServletRuntime(asyncRequest).setupTracingCompletionWhenAsyncRequestCompletes(
-            asyncRequest, originalRequestTracingState, tagStrategy
+            asyncRequest, asyncResponse, originalRequestTracingState, tagStrategy, tagAdapter
         );
     }
-    
-    /**
-     * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-     * span handling with exceptions from the {@code tagStrategy}.
-     * @param span The span to be tagged
-     * @param requestObj The request context to use for tag values
-     */
-    private void tagSpanWithRequestAttributes(Span span, HttpServletRequest requestObj) {
-        try {
-            tagStrategy.tagSpanWithRequestAttributes(span, requestObj);
-        } catch(Throwable taggingException) {
-            logger.warn("Unable to tag span with request attributes", taggingException);
-        }
+
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getOpenTracingTagStrategy() {
+        return new OpenTracingTagStrategy<>();
     }
 
-    /**
-     * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-     * span handling with exceptions from the {@code tagStrategy}.
-     * @param span The span to be tagged
-     * @param responseObj The response context to be used for tag values
-     */
-    private void tagSpanWithResponseAttributes(Span span, HttpServletResponse responseObj) {
-        try {
-            tagStrategy.tagSpanWithResponseAttributes(span, responseObj);
-        } catch(Throwable taggingException) {
-            logger.warn("Unable to tag span with response attributes", taggingException);
-        }
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getZipkinTagStrategy() {
+        return new ZipkinTagStrategy<>();
     }
 
-    /**
-     * Broken out as a separate method so we can surround it in a try{} to ensure we don't break the overall
-     * span handling with exceptions from the {@code tagStrategy}.
-     * @param span The span to be tagged
-     * @param throwable The exception context to use for tag values
-     */
-    private void handleErroredRequestTags(Span span, Throwable throwable) {
-        try {
-            tagStrategy.handleErroredRequest(span, throwable);
-        } catch(Throwable taggingException) {
-            logger.warn("Unable to tag errored span with exception", taggingException);
-        }
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getNoOpTagStrategy() {
+        return new NoOpTagStrategy<>();
     }
-    
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> getOpenTracingTagStrategy() {
-        return new OpenTracingTagStrategy<HttpServletRequest, HttpServletResponse>(new ServletRequestTagAdapter());
+
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getDefaultTagStrategy() {
+        return getZipkinTagStrategy();
     }
-    
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> getZipkinTagStrategy() {
-        return new ZipkinTagStrategy<HttpServletRequest, HttpServletResponse>(new ServletRequestTagAdapter());
+
+    protected HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> getDefaultTagAdapter() {
+        return new ServletRequestTagAdapter();
     }
-    
-    protected HttpTagStrategy<HttpServletRequest, HttpServletResponse> getNoOpStrategy() {
-        return new NoOpTagStrategy<HttpServletRequest, HttpServletResponse>();
-    }    
 
 }
