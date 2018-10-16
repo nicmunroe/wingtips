@@ -15,6 +15,18 @@ import java.util.List;
 
 public class SpringHttpClientTagAdapter extends HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static SpringHttpClientTagAdapter DEFAULT_INSTANCE = new SpringHttpClientTagAdapter();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static SpringHttpClientTagAdapter getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+
     /**
      * @param request
      *     - The {@code HttpRequest}
@@ -99,9 +111,9 @@ public class SpringHttpClientTagAdapter extends HttpTagAndSpanNamingAdapter<Http
         }
 
         if (request instanceof AsyncClientHttpRequest) {
-            return "asyncresttemplate";
+            return "spring.asyncresttemplate";
         }
 
-        return "resttemplate";
+        return "spring.resttemplate";
     }
 }

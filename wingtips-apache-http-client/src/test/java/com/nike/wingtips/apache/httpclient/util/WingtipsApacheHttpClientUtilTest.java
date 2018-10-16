@@ -148,7 +148,7 @@ public class WingtipsApacheHttpClientUtilTest {
         "false"
     }, splitBy = "\\|")
     @Test
-    public void getSubspanSpanName_works_as_expected(boolean includeQueryString) {
+    public void getFallbackSubspanSpanName_works_as_expected(boolean includeQueryString) {
         // given
         String method = UUID.randomUUID().toString();
         String noQueryStringUri = "http://localhost:4242/foo/bar";
@@ -162,7 +162,7 @@ public class WingtipsApacheHttpClientUtilTest {
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + noQueryStringUri;
 
         // when
-        String result = WingtipsApacheHttpClientUtil.getSubspanSpanName(requestMock);
+        String result = WingtipsApacheHttpClientUtil.getFallbackSubspanSpanName(requestMock);
 
         // then
         assertThat(result).isEqualTo(expectedResult);
@@ -173,7 +173,7 @@ public class WingtipsApacheHttpClientUtilTest {
         "false"
     }, splitBy = "\\|")
     @Test
-    public void getSubspanSpanName_works_as_expected_for_HttpRequestWrapper_with_relative_path(
+    public void getFallbackSubspanSpanName_works_as_expected_for_HttpRequestWrapper_with_relative_path(
         boolean includeQueryString
     ) {
         // given
@@ -196,7 +196,7 @@ public class WingtipsApacheHttpClientUtilTest {
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + host + noQueryStringRelativeUri;
 
         // when
-        String result = WingtipsApacheHttpClientUtil.getSubspanSpanName(reqWrapperMock);
+        String result = WingtipsApacheHttpClientUtil.getFallbackSubspanSpanName(reqWrapperMock);
 
         // then
         assertThat(result).isEqualTo(expectedResult);

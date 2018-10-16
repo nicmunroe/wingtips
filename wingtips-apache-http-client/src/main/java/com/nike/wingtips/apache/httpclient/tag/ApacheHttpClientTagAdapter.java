@@ -16,6 +16,18 @@ import java.util.List;
 
 public class ApacheHttpClientTagAdapter extends HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static ApacheHttpClientTagAdapter DEFAULT_INSTANCE = new ApacheHttpClientTagAdapter();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static ApacheHttpClientTagAdapter getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+
     @Override
     public @Nullable String getRequestPath(@Nullable HttpRequest request) {
         if (request == null) {
@@ -155,6 +167,6 @@ public class ApacheHttpClientTagAdapter extends HttpTagAndSpanNamingAdapter<Http
 
     @Override
     public @Nullable String getSpanHandlerTagValue(@Nullable HttpRequest request, @Nullable HttpResponse response) {
-        return "apachehttpclient";
+        return "apache.httpclient";
     }
 }

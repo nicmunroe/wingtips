@@ -6,6 +6,7 @@ import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.http.HttpRequestTracingUtils;
 import com.nike.wingtips.tags.KnownZipkinTags;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -151,15 +152,7 @@ public class HttpSpanFactory {
      *
      * @return A Span name appropriate for a new root span for this request.
      */
-    public static String getSpanName(HttpServletRequest request) {
-        // TODO: Protect against null request?
-
-        String pathTemplate = determineUriPathTemplate(request);
-
-        if (StringUtils.isNotBlank(pathTemplate)) {
-            return request.getMethod() + " " + pathTemplate;
-        }
-
+    public static @NotNull String getSpanName(@Nullable HttpServletRequest request) {
         /*
             NOTE: We used to use request.getServletPath() and request.getRequestURI() as last resorts, but that leads
             to high cardinality span names (even with request.getServletPath(), thanks to different frameworks not
@@ -169,8 +162,12 @@ public class HttpSpanFactory {
             a path at this point then we'll do what Zipkin does and just default to the HTTP method.
         */
 
-        // At this point we've struck out on finding a path template. Fall back to just returning the HTTP method.
-        return request.getMethod();
+        String pathTemplate = determineUriPathTemplate(request);
+        String method = (request == null) ? null : request.getMethod();
+
+        // HttpRequestTracingUtils.generateSafeSpanName() gives us what we want, and properly handles the case
+        //      where everything passed into it is null.
+        return HttpRequestTracingUtils.generateSafeSpanName(method, pathTemplate, (Integer)null);
     }
 
     private static String getRequestAttributeAsString(HttpServletRequest request, String attrName) {

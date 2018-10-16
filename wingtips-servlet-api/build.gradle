@@ -17,6 +17,7 @@ dependencies {
             'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
     )
     testCompile(
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "junit:junit-dep:$junitVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",

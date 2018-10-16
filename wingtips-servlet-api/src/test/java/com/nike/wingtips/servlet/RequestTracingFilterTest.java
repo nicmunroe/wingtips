@@ -9,7 +9,7 @@ import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
-import com.nike.wingtips.tags.NoOpTagStrategy;
+import com.nike.wingtips.tags.NoOpHttpTagStrategy;
 import com.nike.wingtips.tags.OpenTracingTagStrategy;
 import com.nike.wingtips.tags.ZipkinTagStrategy;
 import com.nike.wingtips.util.TracingState;
@@ -18,6 +18,8 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -112,7 +114,7 @@ public class RequestTracingFilterTest {
 
         doReturn("NONE")
             .when(filterConfigMock)
-            .getInitParameter(RequestTracingFilter.TAG_STRATEGY_INIT_PARAM_NAME);
+            .getInitParameter(RequestTracingFilter.TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME);
         try {
             filter.init(filterConfigMock);
         }
@@ -153,7 +155,7 @@ public class RequestTracingFilterTest {
 
         doReturn("ZIPKIN")
             .when(filterConfigMock)
-            .getInitParameter(RequestTracingFilter.TAG_STRATEGY_INIT_PARAM_NAME);
+            .getInitParameter(RequestTracingFilter.TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME);
 
         servletRuntimeMock = mock(ServletRuntime.class);
 
@@ -851,11 +853,11 @@ public class RequestTracingFilterTest {
         FilterConfig filterConfig = mock(FilterConfig.class);
         doReturn(strategyFromConfig)
             .when(filterConfig)
-            .getInitParameter(RequestTracingFilter.TAG_STRATEGY_INIT_PARAM_NAME);
+            .getInitParameter(RequestTracingFilter.TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME);
 
         // when
         HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse>
-            tagStrategy = filter.initializeTagStrategy(filterConfig);
+            tagStrategy = filter.initializeTagAndNamingStrategy(filterConfig);
 
         // then
 
@@ -867,11 +869,11 @@ public class RequestTracingFilterTest {
             assertThat(tagStrategy).isInstanceOf(OpenTracingTagStrategy.class);
         }
         else if ("none".equalsIgnoreCase(strategyFromConfig) || "noop".equalsIgnoreCase(strategyFromConfig)) {
-            assertThat(tagStrategy).isInstanceOf(NoOpTagStrategy.class);
+            assertThat(tagStrategy).isInstanceOf(NoOpHttpTagStrategy.class);
         }
     }
 
-    // VERIFY initializeTagStrategy ==============================
+    // VERIFY initializeTagAndNamingStrategy ==============================
 
     private static class SpanCapturingFilterChain implements FilterChain {
 
@@ -888,24 +890,24 @@ public class RequestTracingFilterTest {
         // given
         RequestTracingFilter filter = new RequestTracingFilter() {
             @Override
-            protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(FilterConfig filterConfig) {
+            protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagAndNamingStrategy(FilterConfig filterConfig) {
                 return new HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse>() {
                     @Override
                     protected void doHandleRequestTagging(
-                        Span span,
-                        HttpServletRequest request,
-                        HttpTagAndSpanNamingAdapter<HttpServletRequest, ?> adapter
+                        @NotNull Span span,
+                        @NotNull HttpServletRequest request,
+                        @NotNull HttpTagAndSpanNamingAdapter<HttpServletRequest, ?> adapter
                     ) {
                         throw new RuntimeException("boom");
                     }
 
                     @Override
                     protected void doHandleResponseAndErrorTagging(
-                        Span span,
-                        HttpServletRequest request,
-                        HttpServletResponse response,
-                        Throwable error,
-                        HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> adapter
+                        @NotNull Span span,
+                        @Nullable HttpServletRequest request,
+                        @Nullable HttpServletResponse response,
+                        @Nullable Throwable error,
+                        @NotNull HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> adapter
                     ) {
                         throw new RuntimeException("boom");
                     }

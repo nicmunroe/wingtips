@@ -24,6 +24,8 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.execchain.ClientExecChain;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -159,18 +161,20 @@ public class WingtipsHttpClientBuilderTest {
         HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse> explosiveTagStrategy = new HttpTagAndSpanNamingStrategy<HttpRequest, HttpResponse>() {
             @Override
             protected void doHandleRequestTagging(
-                Span span, HttpRequest request,
-                HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapter
+                @NotNull Span span,
+                @NotNull HttpRequest request,
+                @NotNull HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapter
             ) {
                 throw new RuntimeException("boom");
             }
 
             @Override
             protected void doHandleResponseAndErrorTagging(
-                Span span, HttpRequest request,
-                HttpResponse response,
-                Throwable error,
-                HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> adapter
+                @NotNull Span span,
+                @Nullable HttpRequest request,
+                @Nullable HttpResponse response,
+                @Nullable Throwable error,
+                @NotNull HttpTagAndSpanNamingAdapter<HttpRequest, HttpResponse> adapter
             ) {
                 throw new RuntimeException("boom");
             }
@@ -424,8 +428,11 @@ public class WingtipsHttpClientBuilderTest {
 
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + noQueryStringUri;
 
+        HttpTagAndSpanNamingStrategy<HttpRequest, ?> namingStrategyMock = mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+
         // when
-        String result = builder.getSubspanSpanName(requestMock);
+        String result = builder.getSubspanSpanName(requestMock, namingStrategyMock, adapterMock);
 
         // then
         assertThat(result).isEqualTo(expectedResult);
@@ -458,8 +465,11 @@ public class WingtipsHttpClientBuilderTest {
 
         String expectedResult = "apachehttpclient_downstream_call-" + method + "_" + host + noQueryStringRelativeUri;
 
+        HttpTagAndSpanNamingStrategy<HttpRequest, ?> namingStrategyMock = mock(HttpTagAndSpanNamingStrategy.class);
+        HttpTagAndSpanNamingAdapter<HttpRequest, ?> adapterMock = mock(HttpTagAndSpanNamingAdapter.class);
+
         // when
-        String result = builder.getSubspanSpanName(reqWrapperMock);
+        String result = builder.getSubspanSpanName(reqWrapperMock, namingStrategyMock, adapterMock);
 
         // then
         assertThat(result).isEqualTo(expectedResult);

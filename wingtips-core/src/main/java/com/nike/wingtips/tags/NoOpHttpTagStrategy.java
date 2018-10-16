@@ -5,7 +5,22 @@ import com.nike.wingtips.Span;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class NoOpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
+/**
+ * A no-op implementation of {@link HttpTagAndSpanNamingStrategy}. All methods will return null or otherwise do nothing.
+ */
+public class NoOpHttpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
+
+    @SuppressWarnings("WeakerAccess")
+    protected static NoOpHttpTagStrategy<?, ?> DEFAULT_INSTANCE = new NoOpHttpTagStrategy<>();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static <REQ, RES> NoOpHttpTagStrategy<REQ, RES> getDefaultInstance() {
+        return (NoOpHttpTagStrategy<REQ, RES>) DEFAULT_INSTANCE;
+    }
 
     @Override
     protected @Nullable String doGetInitialSpanName(
@@ -23,7 +38,7 @@ public class NoOpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ,
         @Nullable Throwable error,
         @NotNull HttpTagAndSpanNamingAdapter<REQ, RES> adapter
     ) {
-        // intentionally do nothing
+        // Intentionally do nothing.
     }
 
     @Override
@@ -32,7 +47,7 @@ public class NoOpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ,
         @NotNull REQ request,
         @NotNull HttpTagAndSpanNamingAdapter<REQ, ?> adapter
     ) {
-        // intentionally do nothing
+        // Intentionally do nothing.
     }
 
     @Override
@@ -43,6 +58,6 @@ public class NoOpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ,
         @Nullable Throwable error,
         @NotNull HttpTagAndSpanNamingAdapter<REQ, RES> adapter
     ) {
-        // intentionally do nothing
+        // Intentionally do nothing.
     }
 }

@@ -15,6 +15,18 @@ import javax.servlet.http.HttpServletResponse;
 
 public class ServletRequestTagAdapter extends HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static ServletRequestTagAdapter DEFAULT_INSTANCE = new ServletRequestTagAdapter();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static ServletRequestTagAdapter getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+
     /**
      * Since this class represents server requests/responses (not clients), we only want to consider HTTP status codes
      * greater than or equal to 500 to be an error. From a server's perspective, a 4xx response is the correct

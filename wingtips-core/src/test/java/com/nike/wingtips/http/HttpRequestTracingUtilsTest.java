@@ -565,7 +565,7 @@ public class HttpRequestTracingUtilsTest {
                                 : prefix + "-" + expectedSuffix;
 
         // when
-        String result = HttpRequestTracingUtils.getSubspanSpanNameForHttpRequest(prefix, method, uri);
+        String result = HttpRequestTracingUtils.getFallbackSpanNameForHttpRequest(prefix, method);
 
         // then
         assertThat(result).isEqualTo(expectedResult);
@@ -585,7 +585,7 @@ public class HttpRequestTracingUtilsTest {
                                 : prefix + "-" + expectedSuffix;
 
         // when
-        String result = HttpRequestTracingUtils.getSubspanSpanNameForHttpRequest(prefix, null, null);
+        String result = HttpRequestTracingUtils.getFallbackSpanNameForHttpRequest(prefix, null);
 
         // then
         assertThat(result).isEqualTo(expectedResult);

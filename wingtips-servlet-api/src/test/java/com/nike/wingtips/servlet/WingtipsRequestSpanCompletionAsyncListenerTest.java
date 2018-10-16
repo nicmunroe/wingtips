@@ -96,7 +96,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
         // then
         assertThat(impl.originalRequestTracingState).isSameAs(tracingStateMock);
-        assertThat(impl.tagStrategy).isSameAs(tagStrategyMock);
+        assertThat(impl.tagAndNamingStrategy).isSameAs(tagStrategyMock);
         assertThat(impl.alreadyCompleted.get()).isFalse();
     }
 

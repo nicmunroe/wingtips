@@ -9,12 +9,25 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Implementations know how to extract basic HTTP properties from HTTP Request
- * and Response objects.  These are used by a {@link HttpTagAndSpanNamingStrategy}
- * to extract the necessary tag values.
+ * An implementation of this class knows how to extract basic HTTP properties from HTTP Request and Response objects
+ * for a given HTTP framework or library, and how to handle initial and final span names for that framework or library.
+ *
+ * <p>This functionality is used by {@link HttpTagAndSpanNamingStrategy} implementations to extract tag values and
+ * determine span names.
+ *
+ * <p>The methods related to span names ({@link #getInitialSpanName(Object)}, {@link
+ * #getFinalSpanName(Object, Object)}, and {@link #getSpanNamePrefix(Object)}) have default implementations already
+ * filled in that should cover most use cases, but are overrideable if you need to adjust their behavior. The
+ * remaining methods are abstract and must be supplied by concrete implementations.
+ *
+ * <p>NOTE: The {@link #getErrorResponseTagValue(Object)} method assumes any 4xx or 5xx HTTP response status code
+ * indicates that the span should be tagged with an "error" tag. This is usually true for most client call responses,
+ * however it is usually not true for server responses since a 4xx means the caller made a mistake, not the server.
+ * So if you are creating an implementation of this class to handle server calls, you may want to override that
+ * method to only consider 5xx (or greater) HTTP status codes as indicating an error.
  * 
  * @author Brandon Currie
- * 
+ * @author Nic Munroe
  */
 public abstract class HttpTagAndSpanNamingAdapter<REQ,RES> {
 
@@ -33,6 +46,7 @@ public abstract class HttpTagAndSpanNamingAdapter<REQ,RES> {
      * error. In particular, empty strings or strings that consist of only whitespace may be treated by callers
      * of this method the same as {@code null}.
      *
+     * @param response The response object to be inspected - <b>this may be null!</b>
      * @return The value that should be used for the "error" {@link com.nike.wingtips.Span#putTag(String, String)}
      * associated with the given response, or null if this response does not indicate an error.
      */
@@ -47,49 +61,81 @@ public abstract class HttpTagAndSpanNamingAdapter<REQ,RES> {
     }
 
     /**
-     * @return The full URL of the request, including scheme, host, and query params.
-     * 
-     * @param request - The request object to be inspected
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @return The full URL of the request, including scheme, host, path, and query params, or null if the full URL
+     * could not be determined. e.g.: {@code http://some.host:8080/foo/bar/12345?thing=stuff}
      */
     public abstract @Nullable String getRequestUrl(@Nullable REQ request);
     
     /**
+     * @param request The request object to be inspected - <b>this may be null!</b>
      * @return The path of the request (similar to {@link #getRequestUrl(Object)}, but omits scheme, host, and query
-     * params).
-     * 
-     * @param request - The request object to be inspected
+     * params), or null if the path could not be determined. e.g.: {@code /foo/bar/12345}
      */
     public abstract @Nullable String getRequestPath(@Nullable REQ request);
 
-    // Impls must handle null request and/
-    // Can return null - callers should gracefully handle null return value.
+    /**
+     * Returns the path template associated with the given request/response (i.e. {@code /foo/:id} instead of
+     * {@code /foo/12345}), or null if the path template could not be determined.
+     *
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @param response The response object to be inspected - <b>this may be null!</b>
+     * @return The path template associated with the given request/response, or null if the path template could
+     * not be determined. e.g.: <code>/foo/bar/{id}</code>
+     */
     public abstract @Nullable String getRequestUriPathTemplate(@Nullable REQ request, @Nullable RES response);
     
     /**
-     * Returns the http status code from the provided response object
-     * @param response To be inspected to determine the http status code
-     * @return The {@code String} representation of the http status code
+     * @param response The response object to be inspected - <b>this may be null!</b>
+     * @return The HTTP status code (e.g. 200, 400, 503, etc) for the given response, or null if the HTTP status code
+     * could not be determined.
      */
     public abstract @Nullable Integer getResponseHttpStatus(@Nullable RES response);
 
     /**
-     * The HTTP Method used. e.g "GET" or "POST" ..
-     * @param request The request object to be inspected
-     * @return The HTTP Method
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @return The HTTP method (e.g. "GET", "POST", etc) for the given request, or null if the HTTP method could not
+     * be determined.
      */
     public abstract @Nullable String getRequestHttpMethod(@Nullable REQ request);
 
+    /**
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @param headerKey The header key (name) to look for - should never be null.
+     * @return The single header value associated with the given header key, or null if no such header exists for
+     * the given request. If there are multiple values associated with the header key, then only the first one will
+     * be returned.
+     */
     public abstract @Nullable String getHeaderSingleValue(@Nullable REQ request, @NotNull String headerKey);
 
-    // May return either null or empty list if there are no matches.
+    /**
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @param headerKey The header key (name) to look for - should never be null.
+     * @return All the header values associated with the given header key, or null if no such header exists for the
+     * given request. Implementations may choose to return an empty list instead of null if no such header exists.
+     */
     public abstract @Nullable List<String> getHeaderMultipleValue(@Nullable REQ request, @NotNull String headerKey);
 
-    // Can return null - callers should omit prefix if this returns null.
+    /**
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @return The desired prefix that should be prepended before any span name produced by {@link
+     * #getInitialSpanName(Object)} or {@link #getFinalSpanName(Object, Object)}, or null if no prefix is desired.
+     * Defaults to null - if you want a non-null prefix you'll need to override this method.
+     */
     public @Nullable String getSpanNamePrefix(@Nullable REQ request) {
         return null;
     }
 
-    // Can return null - callers should have a reasonable fallback if this returns null/blank
+    /**
+     * By default this method uses a combination of {@link #getSpanNamePrefix(Object)} and {@link
+     * HttpRequestTracingUtils#generateSafeSpanName(Object, Object, HttpTagAndSpanNamingAdapter)} to generate a name.
+     * You can override this method if you need different behavior.
+     *
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @return The initial span name that this adapter wants to use for a span around the given request, or null
+     * if this adapter can't (or doesn't want to) come up with a name. Callers should always check for a null return
+     * value, and come up with a reasonable fallback name in that case.
+     */
     public @Nullable String getInitialSpanName(@Nullable REQ request) {
         String prefix = getSpanNamePrefix(request);
 
@@ -100,9 +146,25 @@ public abstract class HttpTagAndSpanNamingAdapter<REQ,RES> {
                : prefix + "-" + defaultSpanName;
     }
 
-    // Can return null - callers should not change span name if this returns null/blank
+    /**
+     * By default this method uses a combination of {@link #getSpanNamePrefix(Object)} and {@link
+     * HttpRequestTracingUtils#generateSafeSpanName(Object, Object, HttpTagAndSpanNamingAdapter)} to generate a name.
+     * You can override this method if you need different behavior.
+     *
+     * @param request The request object to be inspected - <b>this may be null!</b>
+     * @param response The response object to be inspected - <b>this may be null!</b>
+     * @return The final span name that this adapter wants to use for a span around the given request, or null
+     * if this adapter can't (or doesn't want to) come up with a name. Callers should always check for a null return
+     * value, and should not change the preexisting initial span name if this returns null.
+     */
     public @Nullable String getFinalSpanName(@Nullable REQ request, @Nullable RES response) {
-        return HttpRequestTracingUtils.generateSafeSpanName(request, response, this);
+        String prefix = getSpanNamePrefix(request);
+
+        String defaultSpanName = HttpRequestTracingUtils.generateSafeSpanName(request, response, this);
+
+        return (StringUtils.isBlank(prefix))
+               ? defaultSpanName
+               : prefix + "-" + defaultSpanName;
     }
 
     /**

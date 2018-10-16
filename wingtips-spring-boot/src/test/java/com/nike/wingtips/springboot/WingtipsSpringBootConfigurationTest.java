@@ -23,7 +23,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.AsyncRestTemplate;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -158,7 +157,7 @@ public class WingtipsSpringBootConfigurationTest {
         
 
         String tagStrategyFilterInitParam =
-            filterRegistrationBean.getInitParameters().get(RequestTracingFilter.TAG_STRATEGY_INIT_PARAM_NAME);
+            filterRegistrationBean.getInitParameters().get(RequestTracingFilter.TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME);
 
         if (tagStrategy == null) {
             assertThat(tagStrategyFilterInitParam).isNull();

@@ -23,6 +23,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public class OpenTracingTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static OpenTracingTagStrategy<?, ?> DEFAULT_INSTANCE = new OpenTracingTagStrategy<>();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static <REQ, RES> OpenTracingTagStrategy<REQ, RES> getDefaultInstance() {
+        return (OpenTracingTagStrategy<REQ, RES>) DEFAULT_INSTANCE;
+    }
+
     @Override
     protected void doHandleRequestTagging(
         @NotNull Span span,

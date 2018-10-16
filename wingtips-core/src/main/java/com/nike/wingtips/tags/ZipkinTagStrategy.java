@@ -34,6 +34,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ZipkinTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static ZipkinTagStrategy<?, ?> DEFAULT_INSTANCE = new ZipkinTagStrategy<>();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static <REQ, RES> ZipkinTagStrategy<REQ, RES> getDefaultInstance() {
+        return (ZipkinTagStrategy<REQ, RES>) DEFAULT_INSTANCE;
+    }
+
     @Override
     protected void doHandleRequestTagging(
         @NotNull Span span,

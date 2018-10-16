@@ -16,6 +16,7 @@ dependencies {
     )
     testCompile(
             project(":wingtips-servlet-api"),
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "junit:junit-dep:$junitVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",

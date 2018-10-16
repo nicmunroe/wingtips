@@ -112,7 +112,7 @@ The `HttpTagAndSpanNamingStrategy` is defined by the init param `server-side-spa
 ##### 1. Extend the `RequestTracingFilter` class
 
 To provide a custom tag strategy, extend the `RequestTracingFilter` and override
-`protected void initializeTagStrategy(FilterConfig filterConfig)` to return your
+`protected void initializeTagAndNamingStrategy(FilterConfig filterConfig)` to return your
 tag strategy.  
 
 In this example, the provided strategy extends the OpenTracing implementation to 
@@ -121,7 +121,7 @@ add a tag for the exception name:
 ```java
 public class ErrorTaggingRequestTracingFilter extends RequestTracingFilter {
     @Override
-    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagStrategy(FilterConfig filterConfig)  {
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagAndNamingStrategy(FilterConfig filterConfig)  {
     		return new OpenTracingTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
 
 				@Override public void handleErroredRequest(Span span, Throwable throwable) {

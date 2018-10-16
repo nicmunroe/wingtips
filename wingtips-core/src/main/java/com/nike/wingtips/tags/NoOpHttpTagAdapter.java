@@ -6,12 +6,24 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * TODO: Class Description
+ * A no-op implementation of {@link HttpTagAndSpanNamingAdapter}. All methods will return null.
  *
  * @author Nic Munroe
  */
 public class NoOpHttpTagAdapter<REQ,RES> extends HttpTagAndSpanNamingAdapter<REQ,RES> {
 
+    @SuppressWarnings("WeakerAccess")
+    protected static NoOpHttpTagAdapter<?, ?> DEFAULT_INSTANCE = new NoOpHttpTagAdapter<>();
+
+    /**
+     * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
+     * this class and does not need any customization.
+     */
+    @SuppressWarnings("unchecked")
+    public static <REQ, RES> NoOpHttpTagAdapter<REQ, RES> getDefaultInstance() {
+        return (NoOpHttpTagAdapter<REQ, RES>) DEFAULT_INSTANCE;
+    }
+    
     @Override
     public @Nullable String getErrorResponseTagValue(@Nullable RES response) {
         return null;

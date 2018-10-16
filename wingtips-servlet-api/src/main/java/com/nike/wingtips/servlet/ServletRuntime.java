@@ -55,15 +55,20 @@ abstract class ServletRuntime {
      *
      * @param asyncRequest The async servlet request (guaranteed to be async since this method will only be called when
      * {@link #isAsyncRequest(HttpServletRequest)} returns true).
+     * @param asyncResponse The servlet response object - needed for span tagging.
      * @param originalRequestTracingState The {@link TracingState} that was generated when this request started, and
      * which should be completed when the given async servlet request finishes.
+     * @param tagAndNamingStrategy The {@link HttpTagAndSpanNamingStrategy} that should be used for final span name
+     * and tagging.
+     * @param tagAndNamingAdapter The {@link HttpTagAndSpanNamingAdapter} that should be used by
+     * {@code tagAndNamingStrategy} for final span name and tagging.
      */
     abstract void setupTracingCompletionWhenAsyncRequestCompletes(
         HttpServletRequest asyncRequest,
         HttpServletResponse asyncResponse,
         TracingState originalRequestTracingState,
-        HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
-        HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+        HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagAndNamingStrategy,
+        HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAndNamingAdapter
     );
 
     /**
@@ -125,8 +130,8 @@ abstract class ServletRuntime {
             HttpServletRequest asyncRequest,
             HttpServletResponse asyncResponse,
             TracingState originalRequestTracingState,
-            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
-            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagAndNamingStrategy,
+            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAndNamingAdapter
         ) {
             throw new IllegalStateException("This method should never be called in a pre-Servlet-3.0 environment.");
         }
@@ -152,12 +157,14 @@ abstract class ServletRuntime {
             HttpServletRequest asyncRequest,
             HttpServletResponse asyncResponse,
             TracingState originalRequestTracingState,
-            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagStrategy,
-            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAdapter
+            HttpTagAndSpanNamingStrategy<HttpServletRequest,HttpServletResponse> tagAndNamingStrategy,
+            HttpTagAndSpanNamingAdapter<HttpServletRequest,HttpServletResponse> tagAndNamingAdapter
         ) {
             // Async processing was started, so we have to complete it with a listener.
             asyncRequest.getAsyncContext().addListener(
-                new WingtipsRequestSpanCompletionAsyncListener(originalRequestTracingState, tagStrategy, tagAdapter),
+                new WingtipsRequestSpanCompletionAsyncListener(originalRequestTracingState, tagAndNamingStrategy,
+                                                               tagAndNamingAdapter
+                ),
                 asyncRequest,
                 asyncResponse
             );

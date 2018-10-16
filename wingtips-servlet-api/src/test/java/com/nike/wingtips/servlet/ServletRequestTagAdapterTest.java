@@ -1,17 +1,19 @@
 package com.nike.wingtips.servlet;
 
-import static org.mockito.Mockito.*;
+import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
-import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 
 @RunWith(DataProviderRunner.class)
 public class ServletRequestTagAdapterTest {
@@ -29,17 +31,17 @@ public class ServletRequestTagAdapterTest {
     @Test
     public void fivehundred_responses_are_errors() {
         doReturn(500).when(response).getStatus();
-        assert(adapter.isErrorResponse(response));
+        assertThat(adapter.getErrorResponseTagValue(response)).isNotEmpty();
         
         doReturn(499).when(response).getStatus();
-        assert(!adapter.isErrorResponse(response));
+        assertThat(adapter.getErrorResponseTagValue(response)).isEmpty();
     }
     
     @Test
     public void getRequestUri() {
-        String uri ="/endpoint";
-        doReturn(uri).when(request).getRequestURI();
-        assert(uri.equals(adapter.getRequestUri(request)));
+        String path ="/endpoint";
+        doReturn(path).when(request).getRequestURI();
+        assert(path.equals(adapter.getRequestPath(request)));
     }
     
     @Test

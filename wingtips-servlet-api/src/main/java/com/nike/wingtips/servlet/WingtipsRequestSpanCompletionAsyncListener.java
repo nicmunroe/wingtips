@@ -5,6 +5,8 @@ import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.ServletRuntime.Servlet3Runtime;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
+import com.nike.wingtips.tags.NoOpHttpTagAdapter;
+import com.nike.wingtips.tags.NoOpHttpTagStrategy;
 import com.nike.wingtips.util.TracingState;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,18 +34,28 @@ class WingtipsRequestSpanCompletionAsyncListener implements AsyncListener {
     protected final TracingState originalRequestTracingState;
     // Used to prevent two threads from trying to close the span at the same time 
     protected final AtomicBoolean alreadyCompleted = new AtomicBoolean(false);
-    protected final HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategy;
-    protected final HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> tagAdapter;
+    protected final HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagAndNamingStrategy;
+    protected final HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> tagAndNamingAdapter;
 
     WingtipsRequestSpanCompletionAsyncListener(
         TracingState originalRequestTracingState,
-        HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagStrategy,
-        HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> tagAdapter
+        HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> tagAndNamingStrategy,
+        HttpTagAndSpanNamingAdapter<HttpServletRequest, HttpServletResponse> tagAndNamingAdapter
     ) {
-        // TODO: Can we ever get null tagStrategy and/or null tagAdapter? Do proper error handling depending on the answer.
         this.originalRequestTracingState = originalRequestTracingState;
-        this.tagStrategy = tagStrategy;
-        this.tagAdapter = tagAdapter;
+
+        // We should never get a null tag strategy or tag adapter in reality, but just in case we do, default to
+        //      the no-op impls.
+        if (tagAndNamingStrategy == null) {
+            tagAndNamingStrategy = NoOpHttpTagStrategy.getDefaultInstance();
+        }
+
+        if (tagAndNamingAdapter == null) {
+            tagAndNamingAdapter = NoOpHttpTagAdapter.getDefaultInstance();
+        }
+
+        this.tagAndNamingStrategy = tagAndNamingStrategy;
+        this.tagAndNamingAdapter = tagAndNamingAdapter;
     }
 
     @Override
@@ -106,8 +118,8 @@ class WingtipsRequestSpanCompletionAsyncListener implements AsyncListener {
 
                     try {
                         // Handle response/error tagging and final span name.
-                        tagStrategy.handleResponseTaggingAndFinalSpanName(
-                            span, httpRequest, httpResponse, error, tagAdapter
+                        tagAndNamingStrategy.handleResponseTaggingAndFinalSpanName(
+                            span, httpRequest, httpResponse, error, tagAndNamingAdapter
                         );
                     }
                     finally {

@@ -59,7 +59,7 @@ The tagStrategy provided will be used to append tags for the requests made with 
 
 #### Example: Use Zipkin tags with RestTemplates
 
-```java
+``` java
 // Example use of a RestTemplate
 private String getQuoteFromApi() {
 	RestTemplate restTemplate = createTracedRestTemplate();
