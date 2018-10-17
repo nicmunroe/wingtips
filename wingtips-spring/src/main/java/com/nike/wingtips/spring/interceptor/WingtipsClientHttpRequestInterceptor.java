@@ -12,7 +12,7 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagAdapter;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpMessage;
@@ -75,7 +75,7 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
     
     /**
      * Default constructor - sets {@link #surroundCallsWithSubspan} to true, and uses the default
-     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and
+     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and
      * {@link SpringHttpClientTagAdapter}).
      */
     public WingtipsClientHttpRequestInterceptor() {
@@ -85,7 +85,7 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
     /**
      * Constructor that lets you choose whether downstream calls will be surrounded with a subspan. The default
      * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} will be used
-     * ({@link ZipkinTagStrategy} and {@link SpringHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link SpringHttpClientTagAdapter}).
      * 
      * @param surroundCallsWithSubspan pass in true to have downstream calls surrounded with a new span, false to only
      * propagate the current span's info downstream (no subspan).
@@ -93,7 +93,7 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
     public WingtipsClientHttpRequestInterceptor(boolean surroundCallsWithSubspan) {
         this(
             surroundCallsWithSubspan,
-            ZipkinTagStrategy.<HttpRequest, ClientHttpResponse>getDefaultInstance(),
+            ZipkinHttpTagStrategy.<HttpRequest, ClientHttpResponse>getDefaultInstance(),
             SpringHttpClientTagAdapter.getDefaultInstance()
         );
     }

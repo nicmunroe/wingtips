@@ -8,8 +8,8 @@ import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.OpenTracingTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.OpenTracingHttpTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.util.TracingState;
 
 import org.slf4j.Logger;
@@ -95,12 +95,12 @@ public class RequestTracingFilter implements Filter {
      * param. You can pass a fully qualified class name to specify a custom impl, or you can pass one of the following
      * short names:
      * <ul>
-     *     <li>{@code ZIPKIN} - short for {@link com.nike.wingtips.tags.ZipkinTagStrategy}</li>
-     *     <li>{@code OPENTRACING} - short for {@link com.nike.wingtips.tags.OpenTracingTagStrategy}</li>
+     *     <li>{@code ZIPKIN} - short for {@link ZipkinHttpTagStrategy}</li>
+     *     <li>{@code OPENTRACING} - short for {@link OpenTracingHttpTagStrategy}</li>
      *     <li>{@code NONE} - short for {@link com.nike.wingtips.tags.NoOpHttpTagStrategy}</li>
      * </ul>
      * If left unspecified, then {@link #getDefaultTagStrategy()} is used (defaults to
-     * {@link com.nike.wingtips.tags.ZipkinTagStrategy}).
+     * {@link ZipkinHttpTagStrategy}).
      */
     public static final String TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME =
         "server-side-span-tag-and-naming-strategy";
@@ -474,10 +474,10 @@ public class RequestTracingFilter implements Filter {
      * should be used by this instance. This method looks for the following short names first:
      * <ul>
      *     <li>
-     *         {@code ZIPKIN} (or a null/blank {@code strategyName}) - causes {@link #getZipkinTagStrategy()} to be
+     *         {@code ZIPKIN} (or a null/blank {@code strategyName}) - causes {@link #getZipkinHttpTagStrategy()} to be
      *         returned
      *     </li>
-     *     <li>{@code OPENTRACING} - causes {@link #getOpenTracingTagStrategy()} to be returned</li>
+     *     <li>{@code OPENTRACING} - causes {@link #getOpenTracingHttpTagStrategy()} to be returned</li>
      *     <li>{@code NONE} - causes {@link #getNoOpTagStrategy()} to be returned</li>
      * </ul>
      *
@@ -494,7 +494,7 @@ public class RequestTracingFilter implements Filter {
      * fallback if an exception is thrown.
      *
      * @param strategyName The short name or fully qualified class name of the {@link HttpTagAndSpanNamingStrategy}
-     * that should be used by this instance. If this is null or blank, then {@link #getZipkinTagStrategy()} will
+     * that should be used by this instance. If this is null or blank, then {@link #getZipkinHttpTagStrategy()} will
      * be returned.
      * @return The {@link HttpTagAndSpanNamingStrategy} that should be used by this instance.
      */
@@ -504,11 +504,11 @@ public class RequestTracingFilter implements Filter {
     ) throws ClassNotFoundException, IllegalAccessException, InstantiationException, ClassCastException {
         // Default is the Zipkin strategy
         if (StringUtils.isBlank(strategyName) || "zipkin".equalsIgnoreCase(strategyName)) {
-            return getZipkinTagStrategy();
+            return getZipkinHttpTagStrategy();
         }
 
         if("opentracing".equalsIgnoreCase(strategyName)) {
-            return getOpenTracingTagStrategy();
+            return getOpenTracingHttpTagStrategy();
         }
 
         if("none".equalsIgnoreCase(strategyName) || "noop".equalsIgnoreCase(strategyName)) {
@@ -554,17 +554,17 @@ public class RequestTracingFilter implements Filter {
     }
 
     /**
-     * @return {@link ZipkinTagStrategy#getDefaultInstance()}.
+     * @return {@link ZipkinHttpTagStrategy#getDefaultInstance()}.
      */
-    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getZipkinTagStrategy() {
-        return ZipkinTagStrategy.getDefaultInstance();
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getZipkinHttpTagStrategy() {
+        return ZipkinHttpTagStrategy.getDefaultInstance();
     }
 
     /**
-     * @return {@link OpenTracingTagStrategy#getDefaultInstance()}.
+     * @return {@link OpenTracingHttpTagStrategy#getDefaultInstance()}.
      */
-    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getOpenTracingTagStrategy() {
-        return OpenTracingTagStrategy.getDefaultInstance();
+    protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getOpenTracingHttpTagStrategy() {
+        return OpenTracingHttpTagStrategy.getDefaultInstance();
     }
 
     /**
@@ -575,10 +575,10 @@ public class RequestTracingFilter implements Filter {
     }
 
     /**
-     * @return {@link #getZipkinTagStrategy()} (i.e. the default tag and naming strategy is the Zipkin tag strategy).
+     * @return {@link #getZipkinHttpTagStrategy()} (i.e. the default tag and naming strategy is the Zipkin tag strategy).
      */
     protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> getDefaultTagStrategy() {
-        return getZipkinTagStrategy();
+        return getZipkinHttpTagStrategy();
     }
 
     /**

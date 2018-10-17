@@ -9,7 +9,7 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagAdapter;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
@@ -121,7 +121,7 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
 
     /**
      * Creates a new instance with the subspan option turned on and the default {@link HttpTagAndSpanNamingStrategy}
-     * and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      */
     public WingtipsApacheHttpClientInterceptor() {
         this(true);
@@ -130,7 +130,7 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
     /**
      * Creates a new instance with the subspan option set to the value of the {@code surroundCallsWithSubspan}
      * argument, and the default {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter}
-     * ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      *
      * @param surroundCallsWithSubspan Pass in true to have requests surrounded in a subspan, false to disable the
      * subspan option.
@@ -138,7 +138,7 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
     public WingtipsApacheHttpClientInterceptor(boolean surroundCallsWithSubspan) {
         this(
             surroundCallsWithSubspan,
-            ZipkinTagStrategy.<HttpRequest, HttpResponse>getDefaultInstance(),
+            ZipkinHttpTagStrategy.<HttpRequest, HttpResponse>getDefaultInstance(),
             ApacheHttpClientTagAdapter.getDefaultInstance()
         );
     }

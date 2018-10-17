@@ -32,18 +32,18 @@ import org.jetbrains.annotations.Nullable;
  * @author brandon
  * @see <a href='https://github.com/openzipkin/brave/tree/master/instrumentation/http#span-data-policy'>Zipkin's Span Data Policy</a>
  */
-public class ZipkinTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
+public class ZipkinHttpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
 
     @SuppressWarnings("WeakerAccess")
-    protected static ZipkinTagStrategy<?, ?> DEFAULT_INSTANCE = new ZipkinTagStrategy<>();
+    protected static ZipkinHttpTagStrategy<?, ?> DEFAULT_INSTANCE = new ZipkinHttpTagStrategy<>();
 
     /**
      * @return A reusable, thread-safe, singleton instance of this class that can be used by anybody who wants to use
      * this class and does not need any customization.
      */
     @SuppressWarnings("unchecked")
-    public static <REQ, RES> ZipkinTagStrategy<REQ, RES> getDefaultInstance() {
-        return (ZipkinTagStrategy<REQ, RES>) DEFAULT_INSTANCE;
+    public static <REQ, RES> ZipkinHttpTagStrategy<REQ, RES> getDefaultInstance() {
+        return (ZipkinHttpTagStrategy<REQ, RES>) DEFAULT_INSTANCE;
     }
 
     @Override

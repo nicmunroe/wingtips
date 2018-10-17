@@ -10,7 +10,7 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagAdapter;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -97,7 +97,7 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
     
     /**
      * Creates a new instance with the subspan option turned on and the default {@link HttpTagAndSpanNamingStrategy}
-     * and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      */
     public WingtipsHttpClientBuilder() {
         this(true);
@@ -106,7 +106,7 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
     /**
      * Creates a new instance with the subspan option set to the value of the {@code surroundCallsWithSubspan}
      * argument, and the default {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter}
-     * ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      *
      * @param surroundCallsWithSubspan Pass in true to have requests surrounded in a subspan, false to disable the
      * subspan option.
@@ -114,7 +114,7 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
     public WingtipsHttpClientBuilder(boolean surroundCallsWithSubspan) {
         this(
             surroundCallsWithSubspan,
-            ZipkinTagStrategy.<HttpRequest, HttpResponse>getDefaultInstance(),
+            ZipkinHttpTagStrategy.<HttpRequest, HttpResponse>getDefaultInstance(),
             ApacheHttpClientTagAdapter.getDefaultInstance()
         );
     }
@@ -155,7 +155,7 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
     /**
      * @return Static factory method for creating a new {@link WingtipsHttpClientBuilder} instance with the subspan
      * option turned on and the default {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter}
-     * ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      */
     public static WingtipsHttpClientBuilder create() {
         return new WingtipsHttpClientBuilder();
@@ -167,7 +167,7 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
      * @return Static factory method for creating a new {@link WingtipsHttpClientBuilder} instance with the subspan
      * option set to the value of the {@code surroundCallsWithSubspan} argument, and the default
      * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter}
-     * ({@link ZipkinTagStrategy} and {@link ApacheHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link ApacheHttpClientTagAdapter}).
      */
     public static WingtipsHttpClientBuilder create(boolean surroundCallsWithSubspan) {
         return new WingtipsHttpClientBuilder(surroundCallsWithSubspan);

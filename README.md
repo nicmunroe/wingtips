@@ -455,8 +455,8 @@ Tag Strategies are a set of classes that apply consistent tagging to every span
 based on data extracted from the HTTP request and response. There are several 
 [HttpTagAndSpanNamingStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/HttpTagAndSpanNamingStrategy.java) 
 implementations:
-- [OpenTracingTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
-- [ZipkinTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/ZipkinTagStrategy.java)
+- [OpenTracingHttpTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingHttpTagStrategy.java)
+- [ZipkinHttpTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/ZipkinHttpTagStrategy.java)
 
 Note that both of these implementations instrument a subset of the total known tags.
 
@@ -469,7 +469,7 @@ If you're integrating with Zipkin, there are some known Zipkin tags that you may
  want to take advantage of. See the [Zipkin Thrift docs](https://zipkin.io/public/thrift/v1/zipkinCore.html), 
  which contain many of the common tags. 
 
-The [ZipkinTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/ZipkinTagStrategy.java) is based
+The [ZipkinHttpTagStrategy](wingtips-core/src/main/java/com/nike/wingtips/tags/ZipkinHttpTagStrategy.java) is based
 on  
 [this Zipkin documentation about Span data policy in HTTP instrumentation](https://github.com/openzipkin/brave/tree/master/instrumentation/http#span-data-policy). 
 You can reference Wingtips' `KnownZipkinTags` class to access 

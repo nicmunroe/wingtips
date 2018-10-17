@@ -14,7 +14,7 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagAdapter;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.util.TracingState;
 
 import org.slf4j.MDC;
@@ -52,7 +52,7 @@ public class WingtipsSpringUtil {
     /**
      * @return A new {@link RestTemplate} instance with a {@link WingtipsClientHttpRequestInterceptor} already added
      * and configured to surround downstream calls with a subspan, and using the default
-     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and
+     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and
      * {@link SpringHttpClientTagAdapter}).
      */
     public static RestTemplate createTracingEnabledRestTemplate() {
@@ -66,7 +66,7 @@ public class WingtipsSpringUtil {
      * @return A new {@link RestTemplate} instance with a {@link WingtipsClientHttpRequestInterceptor} already added
      * and with the subspan option on or off depending on the value of the {@code surroundCallsWithSubspan} argument,
      * and using the default {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter}
-     * ({@link ZipkinTagStrategy} and {@link SpringHttpClientTagAdapter}).
+     * ({@link ZipkinHttpTagStrategy} and {@link SpringHttpClientTagAdapter}).
      */
     public static RestTemplate createTracingEnabledRestTemplate(boolean surroundCallsWithSubspan) {
         RestTemplate restTemplate = new RestTemplate();
@@ -103,7 +103,7 @@ public class WingtipsSpringUtil {
     /**
      * @return A new {@link AsyncRestTemplate} instance with a {@link WingtipsAsyncClientHttpRequestInterceptor}
      * already added and configured to surround downstream calls with a subspan, and using the default
-     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and
+     * {@link HttpTagAndSpanNamingStrategy} and {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and
      * {@link SpringHttpClientTagAdapter}).
      */
     public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate() {
@@ -117,7 +117,7 @@ public class WingtipsSpringUtil {
      * @return A new {@link AsyncRestTemplate} instance with a {@link WingtipsAsyncClientHttpRequestInterceptor}
      * already added and with the subspan option on or off depending on the value of the {@code
      * surroundCallsWithSubspan} argument, and using the default {@link HttpTagAndSpanNamingStrategy} and
-     * {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinTagStrategy} and {@link SpringHttpClientTagAdapter}).
+     * {@link HttpTagAndSpanNamingAdapter} ({@link ZipkinHttpTagStrategy} and {@link SpringHttpClientTagAdapter}).
      */
     public static AsyncRestTemplate createTracingEnabledAsyncRestTemplate(boolean surroundCallsWithSubspan) {
         AsyncRestTemplate asyncRestTemplate = new AsyncRestTemplate();

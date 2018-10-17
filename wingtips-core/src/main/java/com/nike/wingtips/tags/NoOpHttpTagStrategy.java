@@ -60,4 +60,15 @@ public class NoOpHttpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<
     ) {
         // Intentionally do nothing.
     }
+
+    @Override
+    protected void doExtraWingtipsTagging(
+        @NotNull Span span,
+        @Nullable REQ request,
+        @Nullable RES response,
+        @Nullable Throwable error,
+        @NotNull HttpTagAndSpanNamingAdapter<REQ, RES> adapter
+    ) {
+        // Intentionally do nothing.
+    }
 }

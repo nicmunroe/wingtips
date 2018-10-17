@@ -10,8 +10,8 @@ import com.nike.wingtips.servlet.tag.ServletRequestTagAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.NoOpHttpTagStrategy;
-import com.nike.wingtips.tags.OpenTracingTagStrategy;
-import com.nike.wingtips.tags.ZipkinTagStrategy;
+import com.nike.wingtips.tags.OpenTracingHttpTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.util.TracingState;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -144,7 +144,7 @@ public class RequestTracingFilterTest {
         responseMock = mock(HttpServletResponse.class);
         filterChainMock = mock(FilterChain.class);
         spanCapturingFilterChain = new SpanCapturingFilterChain();
-        tagStrategy = new ZipkinTagStrategy<>();
+        tagStrategy = new ZipkinHttpTagStrategy<>();
         tagAdapter = new ServletRequestTagAdapter();
         doReturn(new StringBuffer("http://example.com/endpoint")).when(requestMock).getRequestURL();
 
@@ -863,10 +863,10 @@ public class RequestTracingFilterTest {
 
         // Default is Zipkin
         if (StringUtils.isBlank(strategyFromConfig) || "zipkin".equalsIgnoreCase(strategyFromConfig)) {
-            assertThat(tagStrategy).isInstanceOf(ZipkinTagStrategy.class);
+            assertThat(tagStrategy).isInstanceOf(ZipkinHttpTagStrategy.class);
         }
         else if ("opentracing".equalsIgnoreCase(strategyFromConfig)) {
-            assertThat(tagStrategy).isInstanceOf(OpenTracingTagStrategy.class);
+            assertThat(tagStrategy).isInstanceOf(OpenTracingHttpTagStrategy.class);
         }
         else if ("none".equalsIgnoreCase(strategyFromConfig) || "noop".equalsIgnoreCase(strategyFromConfig)) {
             assertThat(tagStrategy).isInstanceOf(NoOpHttpTagStrategy.class);

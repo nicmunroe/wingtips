@@ -9,7 +9,7 @@ This module is a plugin extension module of the core Wingtips library and contai
 * **`WingtipsClientHttpRequestInterceptor`** - An interceptor for Spring's synchronous `RestTemplate` HTTP client that
 automatically [propagates](../README.md#propagating_traces) Wingtips tracing information on the downstream call's 
 request headers, with an option to surround the downstream call in a [subspan](../README.md#sub_spans). This interceptor
-uses the `OpenTracingTagStrategy` to tag any created subspans. See [Client Request Span Tagging](#client_request_span_tagging) for more details. 
+uses the `OpenTracingHttpTagStrategy` to tag any created subspans. See [Client Request Span Tagging](#client_request_span_tagging) for more details. 
 * **`WingtipsAsyncClientHttpRequestInterceptor`** - An interceptor for Spring's asynchronous `AsyncRestTemplate` HTTP 
 client that automatically [propagates](../README.md#propagating_traces) Wingtips tracing information on the 
 downstream call's request headers, with an option to surround the downstream call in a 
@@ -40,7 +40,7 @@ Related: [Server Request Span Tagging](../wingtips-servlet-api/README.md#server_
 
 ### Default Tagging Strategy
 
-The default implementation uses the `OpenTracingTagStrategy` to append the following tags to the span.
+The default implementation uses the `OpenTracingHttpTagStrategy` to append the following tags to the span.
 
 |  Tag  | Description | Example value |
 | `http.method` | The request method used. | `GET` |
@@ -70,11 +70,11 @@ private String getQuoteFromApi() {
 // Get a tracing-enabled RestTemplate
 private RestTemplate createTracedRestTemplate() {
     // Tag the subspan with Zipkin tags
-	return WingtipsSpringUtil.createTracingEnabledRestTemplate(getZipkinTagStrategy());
+	return WingtipsSpringUtil.createTracingEnabledRestTemplate(getZipkinHttpTagStrategy());
 }
  
-private HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> getZipkinTagStrategy() {
-	return new ZipkinTagStrategy<HttpRequest, ClientHttpResponse>(new SpringHttpClientTagAdapter());
+private HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> getZipkinHttpTagStrategy() {
+	return new ZipkinHttpTagStrategy<HttpRequest, ClientHttpResponse>(new SpringHttpClientTagAdapter());
 }
 ```
 
@@ -84,7 +84,7 @@ It may be desirable to change the logic that determines which spans are tagged w
 have a response code >= `500` or have a server-side  exception trying to execute will be flagged as having an error.
 
 The following example generates a `RestTemplate` that will tag any response with a response code >= 400 as having an error while still
-maintaining the `OpenTracingTagStrategy`.
+maintaining the `OpenTracingHttpTagStrategy`.
 
 ```java 
 SpringHttpClientTagAdapter errorAdapter = new SpringHttpClientTagAdapter() {
@@ -97,7 +97,7 @@ SpringHttpClientTagAdapter errorAdapter = new SpringHttpClientTagAdapter() {
         }
     }
 };
-AsyncRestTemplate asyncTemplate = WingtipsSpringUtil.createTracingEnabledAsyncRestTemplate(new OpenTracingTagStrategy<HttpRequest, ClientHttpResponse>(errorAdapter));
+AsyncRestTemplate asyncTemplate = WingtipsSpringUtil.createTracingEnabledAsyncRestTemplate(new OpenTracingHttpTagStrategy<HttpRequest, ClientHttpResponse>(errorAdapter));
 ```
 
 ## Usage Examples

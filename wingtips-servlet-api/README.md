@@ -13,7 +13,7 @@ information from the incoming request headers for the new span if available. Set
 the Trace ID for each request. Supports Servlet 3 environments (including asynchronous requests) as well as Servlet 2.x 
 environments. You can set the `user-id-header-keys-list` servlet filter param if you expect your service to receive any 
 request headers that represent a user ID (if you don't have any user ID headers then this can be ignored). By default, 
-this filter will tag spans with metadata from the request and response using the [OpenTracingTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java). 
+this filter will tag spans with metadata from the request and response using the [OpenTracingHttpTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingHttpTagStrategy.java). 
 
 Please make sure you have read the [base project README.md](../README.md). This readme assumes you understand the 
 principles and usage instructions described there.
@@ -97,13 +97,13 @@ propagating tracing information. You may also want to consider
 ### Server Request Span Tagging
 
 `HttpServletRequests` and `HttpServletResponses` handled by the `RequestTracingFilter` are passed to a `HttpTagAndSpanNamingStrategy`
-to add metadata to a Span in the form of tags. The [OpenTracingTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
+to add metadata to a Span in the form of tags. The [OpenTracingHttpTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingHttpTagStrategy.java)
 is default.
 
 #### Using a pre-defined tag strategy
 
 The `HttpTagAndSpanNamingStrategy` is defined by the init param `server-side-span-tag-strategy`.  Valid values are:
-- `OPENTRACING` **default** - Uses the [OpenTracingTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingTagStrategy.java)
+- `OPENTRACING` **default** - Uses the [OpenTracingHttpTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/OpenTracingHttpTagStrategy.java)
 - `WINGTIPS` Uses the [WingtipsTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/WingtipsTagStrategy.java)
 - `NONE` Uses the [NoOpTagStrategy](../wingtips-core/src/main/java/com/nike/wingtips/tags/NoOpTagStrategy.java)
 
@@ -122,7 +122,7 @@ add a tag for the exception name:
 public class ErrorTaggingRequestTracingFilter extends RequestTracingFilter {
     @Override
     protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagAndNamingStrategy(FilterConfig filterConfig)  {
-    		return new OpenTracingTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
+    		return new OpenTracingHttpTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
 
 				@Override public void handleErroredRequest(Span span, Throwable throwable) {
 					super.handleErroredRequest(span, throwable);

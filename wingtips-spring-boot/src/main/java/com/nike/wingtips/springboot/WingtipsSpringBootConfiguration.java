@@ -2,6 +2,7 @@ package com.nike.wingtips.springboot;
 
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.RequestTracingFilter;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -45,7 +46,7 @@ import javax.servlet.ServletResponse;
  * None of these properties are required - if they are missing then {@link RequestTracingFilter} will be
  * registered, it will not look for any user ID headers, the span logging format will not be changed (defaults to
  * JSON), and the default tag and span naming strategy and adapter will be used (defaults to {@link
- * com.nike.wingtips.tags.ZipkinTagStrategy} and {@link com.nike.wingtips.servlet.tag.ServletRequestTagAdapter}).
+ * ZipkinHttpTagStrategy} and {@link com.nike.wingtips.servlet.tag.ServletRequestTagAdapter}).
  *
  * <p>If you want Zipkin support in your Wingtips Spring Boot application for exporting span data to a Zipkin server,
  * please see {@code WingtipsWithZipkinSpringBootConfiguration} from the {@code wingtips-zipkin2-spring-boot} Wingtips

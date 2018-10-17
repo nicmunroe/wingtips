@@ -2,6 +2,8 @@ package com.nike.wingtips.springboot;
 
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.servlet.RequestTracingFilter;
+import com.nike.wingtips.tags.OpenTracingHttpTagStrategy;
+import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -29,12 +31,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *         wingtips.server-side-span-tagging-strategy - Represents the {@link
  *         com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy} implementation that should be used by {@link
  *         RequestTracingFilter} to generate span names and automatically set tags on spans that it handles.
- *         {@link RequestTracingFilter} will default to {@link com.nike.wingtips.tags.ZipkinTagStrategy}, however you
+ *         {@link RequestTracingFilter} will default to {@link ZipkinHttpTagStrategy}, however you
  *         can pass in a fully qualified class name for this property if you have a custom impl you want to use.
  *         The following short names are also understood:
  *         <ul>
- *             <li>{@code ZIPKIN} - short for {@link com.nike.wingtips.tags.ZipkinTagStrategy}</li>
- *             <li>{@code OPENTRACING} - short for {@link com.nike.wingtips.tags.OpenTracingTagStrategy}</li>
+ *             <li>{@code ZIPKIN} - short for {@link ZipkinHttpTagStrategy}</li>
+ *             <li>{@code OPENTRACING} - short for {@link OpenTracingHttpTagStrategy}</li>
  *             <li>{@code NONE} - short for {@link com.nike.wingtips.tags.NoOpHttpTagStrategy}</li>
  *         </ul>
  *     </li>
