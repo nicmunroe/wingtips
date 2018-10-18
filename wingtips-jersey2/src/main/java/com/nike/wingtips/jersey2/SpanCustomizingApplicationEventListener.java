@@ -43,7 +43,7 @@ public class SpanCustomizingApplicationEventListener implements ApplicationEvent
 
     @Override
     public void onEvent(ApplicationEvent event) {
-        // only onRequest is used
+        // Only onRequest is used.
     }
 
     @Override
@@ -105,6 +105,11 @@ public class SpanCustomizingApplicationEventListener implements ApplicationEvent
                 result = template;
             }
         }
-        return result != null ? result : builder != null ? builder.toString() : "";
+
+        return (result != null)
+               ? result
+               : (builder != null)
+                 ? builder.toString()
+                 : "";
     }
 }
