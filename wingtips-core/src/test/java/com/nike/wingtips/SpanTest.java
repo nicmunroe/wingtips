@@ -223,6 +223,21 @@ public class SpanTest {
                              false);
     }
 
+    @Test
+    public void setSpanName_works_as_expected() {
+        // given
+        Span span = Span.newBuilder("origSpanName", SpanPurpose.SERVER).build();
+        String newSpanName = UUID.randomUUID().toString();
+
+        assertThat(span.getSpanName()).isNotEqualTo(newSpanName);
+
+        // when
+        span.setSpanName(newSpanName);
+
+        // then
+        assertThat(span.getSpanName()).isEqualTo(newSpanName);
+    }
+
     @DataProvider(value = {
         "SERVER",
         "CLIENT",

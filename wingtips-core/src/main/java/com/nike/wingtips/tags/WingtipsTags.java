@@ -5,7 +5,11 @@ package com.nike.wingtips.tags;
  *
  * @author Nic Munroe
  */
+@SuppressWarnings("WeakerAccess")
 public class WingtipsTags {
+
+    // Private constructor so it can't be instantiated.
+    private WingtipsTags() {}
 
     /**
      * The short name of the framework handling the Span. e.g. "servlet" for a Servlet-based server

@@ -125,9 +125,9 @@ public class WingtipsJersey2ComponentTest {
                 .baseUri("http://localhost")
                 .port(SERVER_PORT)
                 .log().all()
-                .when()
+            .when()
                 .get(WILDCARD_ENDPOINT_PATH_PREFIX + "/" + randomPathSegment + "/foo")
-                .then()
+            .then()
                 .log().all()
                 .extract();
 
@@ -163,12 +163,6 @@ public class WingtipsJersey2ComponentTest {
         @Path(WILDCARD_ENDPOINT_PATH)
         public String getWildcardEndpoint() {
             return WILDCARD_ENDPOINT_ENDPOINT_PAYLOAD;
-        }
-
-        @GET
-        @Path("/bar")
-        public String wtf() {
-            return PATH_PARAM_ENDPOINT_PAYLOAD;
         }
     }
 
