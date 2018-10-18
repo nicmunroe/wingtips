@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author Nic Munroe
  */
-public class NoOpHttpTagAdapter<REQ,RES> extends HttpTagAndSpanNamingAdapter<REQ,RES> {
+public class NoOpHttpTagAdapter<REQ, RES> extends HttpTagAndSpanNamingAdapter<REQ, RES> {
 
     @SuppressWarnings("WeakerAccess")
     protected static NoOpHttpTagAdapter<?, ?> DEFAULT_INSTANCE = new NoOpHttpTagAdapter<>();
@@ -23,7 +23,7 @@ public class NoOpHttpTagAdapter<REQ,RES> extends HttpTagAndSpanNamingAdapter<REQ
     public static <REQ, RES> NoOpHttpTagAdapter<REQ, RES> getDefaultInstance() {
         return (NoOpHttpTagAdapter<REQ, RES>) DEFAULT_INSTANCE;
     }
-    
+
     @Override
     public @Nullable String getErrorResponseTagValue(@Nullable RES response) {
         return null;

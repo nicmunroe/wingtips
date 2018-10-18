@@ -53,7 +53,7 @@ features:
     - The `RequestTracingFilter` uses a `ServletRequestTagStrategy` to implement `OpenTracing` tags for `SERVER` 
     requests.  To modify the tag strategy, supply a `@Bean` of type 
     `HttpRequestResponseTagStrategy<HttpServletRequest, HttpServletResponse>` and it will be injected into the 
-    	`RequestTracingFilter`. 
+    `RequestTracingFilter`. 
 * **`WingtipsSpringBootProperties`** - The Spring Boot 
 [@ConfigurationProperties](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-typesafe-configuration-properties) 
 companion for `WingtipsSpringBootConfiguration` (described above) that allows you to customize some Wingtips behaviors 

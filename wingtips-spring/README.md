@@ -62,19 +62,19 @@ The tagStrategy provided will be used to append tags for the requests made with 
 ``` java
 // Example use of a RestTemplate
 private String getQuoteFromApi() {
-	RestTemplate restTemplate = createTracedRestTemplate();
-	Quote quote = restTemplate.getForObject("http://gturnquist-quoters.cfapps.io/api/random", Quote.class);
-	return quote.toString();
+    RestTemplate restTemplate = createTracedRestTemplate();
+    Quote quote = restTemplate.getForObject("http://gturnquist-quoters.cfapps.io/api/random", Quote.class);
+    return quote.toString();
 }
 
 // Get a tracing-enabled RestTemplate
 private RestTemplate createTracedRestTemplate() {
     // Tag the subspan with Zipkin tags
-	return WingtipsSpringUtil.createTracingEnabledRestTemplate(getZipkinHttpTagStrategy());
+    return WingtipsSpringUtil.createTracingEnabledRestTemplate(getZipkinHttpTagStrategy());
 }
  
 private HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> getZipkinHttpTagStrategy() {
-	return new ZipkinHttpTagStrategy<HttpRequest, ClientHttpResponse>(new SpringHttpClientTagAdapter());
+    return new ZipkinHttpTagStrategy<HttpRequest, ClientHttpResponse>(new SpringHttpClientTagAdapter());
 }
 ```
 

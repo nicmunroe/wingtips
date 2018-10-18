@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *     try {
  *         // Do the request tagging.
  *         tagAndSpanNamingStrategy.handleRequestTagging(spanAroundCall, request, tagAndSpanNamingAdapter);
- *         
+ *
  *         // Keep a handle on the response for later so we can do response tagging and final span name.
  *         response = executeRequest(request);
  *
@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  *         // Keep a handle on any error that gets thrown so it can contribute to the response tagging,
  *         //      but otherwise throw the exception like normal.
  *         errorForTagging = exception;
- *         
+ *
  *         throw exception;
  *     }
  *     finally {
@@ -163,6 +163,7 @@ public abstract class HttpTagAndSpanNamingStrategy<REQ, RES> {
      * @param request The incoming request - should never be null.
      * @param adapter The adapter to handle the incoming request - should never be null (use {@link NoOpHttpTagAdapter}
      * if you don't want a real impl).
+     *
      * @return The span name that should be used for the given request according to this strategy and/or the given
      * adapter, or null if the span name should be deferred to the caller.
      */
@@ -331,6 +332,7 @@ public abstract class HttpTagAndSpanNamingStrategy<REQ, RES> {
      *
      * @param request The incoming request - will never be null.
      * @param adapter The adapter to handle the incoming request - will never be null.
+     *
      * @return The span name that should be used for the given request according to this strategy and/or the given
      * adapter, or null if the span name should be deferred to the caller.
      */

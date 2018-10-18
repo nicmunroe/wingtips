@@ -54,7 +54,7 @@ public class RequestTracingFilterComponentTest {
 
     private static int port;
     private static Server server;
-
+    
     private SpanRecorder spanRecorder;
 
     @BeforeClass
@@ -100,9 +100,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_blocking_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -127,9 +128,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_async_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -154,9 +156,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_blocking_forward_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -181,9 +184,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_async_forward_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -208,9 +212,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_async_error_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -234,9 +239,10 @@ public class RequestTracingFilterComponentTest {
     })
     @Test
     public void verify_wildcard_endpoint_traced_correctly(boolean upstreamSendsSpan) {
-        Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
-                                                           ? generateUpstreamSpanHeaders()
-                                                           : Pair.of((Span)null, Collections.<String, String>emptyMap());
+        Pair<Span, Map<String, String>> upstreamSpanInfo =
+            (upstreamSendsSpan)
+            ? generateUpstreamSpanHeaders()
+            : Pair.of((Span) null, Collections.<String, String>emptyMap());
 
         ExtractableResponse response =
             given()
@@ -258,40 +264,41 @@ public class RequestTracingFilterComponentTest {
     }
 
     @DataProvider(value = {
-    		"true",
-    		"false"
+        "true",
+        "false"
     })
     @Test
     public void verify_tags_set(boolean isError) {
-    
+
         ExtractableResponse response =
-                given()
+            given()
                 .baseUri("http://localhost")
                 .port(port)
                 .log().all()
-                .when()
-                .get(isError? ASYNC_ERROR_PATH : ASYNC_PATH)
-                .then()
+            .when()
+                .get(isError ? ASYNC_ERROR_PATH : ASYNC_PATH)
+            .then()
                 .log().all()
                 .extract();
 
         Span completedSpan = spanRecorder.completedSpans.get(0);
-        
-        if(isError) {
+
+        if (isError) {
             assertThat(response.statusCode()).isEqualTo(500);
             assertThat(completedSpan.getTags().get("http.status_code")).isEqualTo("500");
             assertThat(completedSpan.getTags().get("error")).isEqualTo("true");
-        } else {
+        }
+        else {
             assertThat(response.statusCode()).isEqualTo(200);
             assertThat(completedSpan.getTags().get("http.status_code")).isEqualTo("200");
-            assertThat(completedSpan.getTags().get("error")).isNull();;    
+            assertThat(completedSpan.getTags().get("error")).isNull();
         }
-        
+
         assertThat(completedSpan.getTags().get("http.url")).isEqualTo(ASYNC_ERROR_PATH);
         assertThat(completedSpan.getTags().get("http.method")).isEqualTo("GET");
-        
+
     }
-    
+
     private Pair<Span, Map<String, String>> generateUpstreamSpanHeaders() {
         Span span = Span.newBuilder("upstreamSpan", Span.SpanPurpose.CLIENT).build();
         Map<String, String> headers = MapBuilder
@@ -304,14 +311,16 @@ public class RequestTracingFilterComponentTest {
         return Pair.of(span, headers);
     }
 
-    private void verifySingleSpanCompletedAndReturnedInResponse(ExtractableResponse response,
-                                                                long expectedMinSpanDurationMillis,
-                                                                Span expectedUpstreamSpan) {
+    private void verifySingleSpanCompletedAndReturnedInResponse(
+        ExtractableResponse response,
+        long expectedMinSpanDurationMillis,
+        Span expectedUpstreamSpan
+    ) {
         // We can have a race condition where the response is sent and we try to verify here before the servlet filter
         //      has had a chance to complete the span. Wait a few milliseconds to give the servlet filter time to
         //      finish.
         waitUntilSpanRecorderHasExpectedNumSpans(1);
-        
+
         assertThat(spanRecorder.completedSpans).hasSize(1);
         Span completedSpan = spanRecorder.completedSpans.get(0);
         String traceIdFromResponse = response.header(TraceHeaders.TRACE_ID);
@@ -353,10 +362,12 @@ public class RequestTracingFilterComponentTest {
         public final List<Span> completedSpans = new ArrayList<>();
 
         @Override
-        public void spanStarted(Span span) { }
+        public void spanStarted(Span span) {
+        }
 
         @Override
-        public void spanSampled(Span span) { }
+        public void spanSampled(Span span) {
+        }
 
         @Override
         public void spanCompleted(Span span) {
@@ -389,17 +400,17 @@ public class RequestTracingFilterComponentTest {
 
     private static final String ASYNC_PATH = "/async";
     private static final String ASYNC_RESULT = "async endpoint hit - " + UUID.randomUUID().toString();
-
+    
     private static final String BLOCKING_FORWARD_PATH = "/blockingForward";
     private static final String ASYNC_FORWARD_PATH = "/asyncForward";
     private static final String ASYNC_ERROR_PATH = "/asyncError";
-
+    
     private static final String WILDCARD_PATH_PREFIX = "/wildcard";
     private static final String WILDCARD_PATH = WILDCARD_PATH_PREFIX + "/*";
     private static final String WILDCARD_RESULT = "wildcard endpoint hit - " + UUID.randomUUID().toString();
 
     private static final int SLEEP_TIME_MILLIS = 50;
-
+    
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     public static class BlockingServlet extends HttpServlet {
@@ -466,8 +477,9 @@ public class RequestTracingFilterComponentTest {
     public static class AsyncErrorServlet extends HttpServlet {
 
         public void doGet(HttpServletRequest request, final HttpServletResponse response) {
-            if (DispatcherType.ERROR.equals(request.getDispatcherType()))
+            if (DispatcherType.ERROR.equals(request.getDispatcherType())) {
                 return;
+            }
 
             final AsyncContext asyncContext = request.startAsync(request, response);
             asyncContext.setTimeout(SLEEP_TIME_MILLIS);

@@ -118,17 +118,16 @@ tag strategy.
 In this example, the provided strategy extends the OpenTracing implementation to 
 add a tag for the exception name:
 
-```java
+``` java
 public class ErrorTaggingRequestTracingFilter extends RequestTracingFilter {
     @Override
     protected HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> initializeTagAndNamingStrategy(FilterConfig filterConfig)  {
-    		return new OpenTracingHttpTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
-
-				@Override public void handleErroredRequest(Span span, Throwable throwable) {
-					super.handleErroredRequest(span, throwable);
-					span.putTag("error.class", throwable.getClass().getName());
-				}
-    		};
+        return new OpenTracingHttpTagStrategy<HttpServletRequest, HttpServletResponse> (new ServletRequestTagAdapter()) {
+            @Override public void handleErroredRequest(Span span, Throwable throwable) {
+                super.handleErroredRequest(span, throwable);
+                span.putTag("error.class", throwable.getClass().getName());
+            }
+        };
     }    
 }
 ```

@@ -9,25 +9,23 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Applies {@code Zipkin} standard tags for:
  * <ul>
- * <li>http.method</li>
- * <li>http.path</li>
- * <li>http.url</li>
- * <li>http.route</li>
- * <li>http.status_code</li>
- * <li>error</li>
+ *     <li>http.method</li>
+ *     <li>http.path</li>
+ *     <li>http.url</li>
+ *     <li>http.route</li>
+ *     <li>http.status_code</li>
+ *     <li>error</li>
  * </ul>
  *
  * The following known Zipkin tags are <strong>unimplemented</strong> in this strategy:
  * <ul>
- * <li>http.request.size</li>
- * <li>http.response.size</li>
- * <li>http.host</li>
+ *     <li>http.request.size</li>
+ *     <li>http.response.size</li>
+ *     <li>http.host</li>
  * </ul>
  *
- * @param <REQ>
- *     The expected request object type to be inspected
- * @param <RES>
- *     The expected response object type to be inspected
+ * @param <REQ> The expected request object type to be inspected
+ * @param <RES> The expected response object type to be inspected
  *
  * @author brandon
  * @see <a href='https://github.com/openzipkin/brave/tree/master/instrumentation/http#span-data-policy'>Zipkin's Span Data Policy</a>
@@ -68,7 +66,7 @@ public class ZipkinHttpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrateg
     ) {
         // Now that we have both request and response, we'll re-try to get the route.
         putTagIfValueIsNotBlank(span, KnownZipkinTags.HTTP_ROUTE, adapter.getRequestUriPathTemplate(request, response));
-        
+
         putTagIfValueIsNotBlank(span, KnownZipkinTags.HTTP_STATUS_CODE, adapter.getResponseHttpStatus(response));
 
         // For error tagging, we'll defer to the error Throwable if it's not null.
