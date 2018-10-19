@@ -137,13 +137,13 @@ public class WingtipsHttpClientBuilder extends HttpClientBuilder {
     ) {
         if (tagAndNamingStrategy == null) {
             throw new IllegalArgumentException(
-                "tagAndNamingStrategy cannot be null - if you really want no strategy, use NoOpHttpTagAdapter"
+                "tagAndNamingStrategy cannot be null - if you really want no strategy, use NoOpHttpTagStrategy"
             );
         }
 
         if (tagAndNamingAdapter == null) {
             throw new IllegalArgumentException(
-                "tagAndNamingAdapter cannot be null - if you really want no adapter, use NoOpHttpTagStrategy"
+                "tagAndNamingAdapter cannot be null - if you really want no adapter, use NoOpHttpTagAdapter"
             );
         }
 

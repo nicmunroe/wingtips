@@ -18,6 +18,7 @@ import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessor;
 import org.jetbrains.annotations.NotNull;
 
@@ -161,13 +162,13 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
     ) {
         if (tagAndNamingStrategy == null) {
             throw new IllegalArgumentException(
-                "tagAndNamingStrategy cannot be null - if you really want no strategy, use NoOpHttpTagAdapter"
+                "tagAndNamingStrategy cannot be null - if you really want no strategy, use NoOpHttpTagStrategy"
             );
         }
 
         if (tagAndNamingAdapter == null) {
             throw new IllegalArgumentException(
-                "tagAndNamingAdapter cannot be null - if you really want no adapter, use NoOpHttpTagStrategy"
+                "tagAndNamingAdapter cannot be null - if you really want no adapter, use NoOpHttpTagAdapter"
             );
         }
         
@@ -205,9 +206,16 @@ public class WingtipsApacheHttpClientInterceptor implements HttpRequestIntercept
             // There was a subspan. Finalize and close it.
             try {
                 // Handle response/error tagging and final span name.
-                //      We don't have a request or error at this point, so we pass null for those args.
+                //      The request should be found in the context attributes - try to extract it from there.
+                //      We have no access to any error, so we pass null for the error arg.
+                HttpRequest request = null;
+                Object requestRawObj = context.getAttribute(HttpCoreContext.HTTP_REQUEST);
+                if (requestRawObj instanceof HttpRequest) {
+                    request = (HttpRequest) requestRawObj;
+                }
+
                 tagAndNamingStrategy.handleResponseTaggingAndFinalSpanName(
-                    spanToClose, null, response, null, tagAndNamingAdapter
+                    spanToClose, request, response, null, tagAndNamingAdapter
                 );
             } finally {
                 // Span.close() contains the logic we want - if the spanToClose was an overall span (new trace)

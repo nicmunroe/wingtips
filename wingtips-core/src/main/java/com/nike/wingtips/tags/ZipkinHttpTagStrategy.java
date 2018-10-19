@@ -27,8 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * @param <REQ> The expected request object type to be inspected
  * @param <RES> The expected response object type to be inspected
  *
- * @author brandon
  * @see <a href='https://github.com/openzipkin/brave/tree/master/instrumentation/http#span-data-policy'>Zipkin's Span Data Policy</a>
+ *
+ * @author Brandon Currie
+ * @author Nic Munroe
  */
 public class ZipkinHttpTagStrategy<REQ, RES> extends HttpTagAndSpanNamingStrategy<REQ, RES> {
 
