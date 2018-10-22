@@ -134,17 +134,7 @@ public class RequestTracingFilter implements Filter {
     @Override
     @SuppressWarnings("RedundantThrows")
     public void init(FilterConfig filterConfig) throws ServletException {
-        String userIdHeaderKeysListString = filterConfig.getInitParameter(USER_ID_HEADER_KEYS_LIST_INIT_PARAM_NAME);
-        if (userIdHeaderKeysListString != null) {
-            List<String> parsedList = new ArrayList<>();
-            for (String headerKey : userIdHeaderKeysListString.split(",")) {
-                String trimmedHeaderKey = headerKey.trim();
-                if (trimmedHeaderKey.length() > 0)
-                    parsedList.add(trimmedHeaderKey);
-            }
-            userIdHeaderKeysFromInitParam = Collections.unmodifiableList(parsedList);
-        }
-
+        this.userIdHeaderKeysFromInitParam = initializeUserIdHeaderKeys(filterConfig);
         this.tagAndNamingStrategy = initializeTagAndNamingStrategy(filterConfig);
         this.tagAndNamingAdapter = initializeTagAndNamingAdapter(filterConfig);
     }
@@ -428,6 +418,27 @@ public class RequestTracingFilter implements Filter {
         getServletRuntime(asyncRequest).setupTracingCompletionWhenAsyncRequestCompletes(
             asyncRequest, asyncResponse, originalRequestTracingState, tagAndNamingStrategy, tagAndNamingAdapter
         );
+    }
+
+    /**
+     * @param filterConfig The {@link FilterConfig} for initializing this Servlet filter.
+     * @return The list of user ID header keys that should be used by this instance, based on the given {@link
+     * FilterConfig#getInitParameter(String)} for the {@link #USER_ID_HEADER_KEYS_LIST_INIT_PARAM_NAME} init param.
+     * May return null or empty list if there are no specified user ID header keys.
+     */
+    protected List<String> initializeUserIdHeaderKeys(FilterConfig filterConfig) {
+        String userIdHeaderKeysListString = filterConfig.getInitParameter(USER_ID_HEADER_KEYS_LIST_INIT_PARAM_NAME);
+        if (userIdHeaderKeysListString != null) {
+            List<String> parsedList = new ArrayList<>();
+            for (String headerKey : userIdHeaderKeysListString.split(",")) {
+                String trimmedHeaderKey = headerKey.trim();
+                if (trimmedHeaderKey.length() > 0)
+                    parsedList.add(trimmedHeaderKey);
+            }
+            return Collections.unmodifiableList(parsedList);
+        }
+
+        return null;
     }
 
     /**

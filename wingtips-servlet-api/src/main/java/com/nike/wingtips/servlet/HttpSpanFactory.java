@@ -19,7 +19,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class HttpSpanFactory {
 
-    private static final String SPRING_BEST_MATCHING_PATTERN_REQUEST_ATTRIBUTE_KEY =
+    @SuppressWarnings("WeakerAccess")
+    protected static final String SPRING_BEST_MATCHING_PATTERN_REQUEST_ATTRIBUTE_KEY =
         "org.springframework.web.servlet.HandlerMapping.bestMatchingPattern";
 
     /**
