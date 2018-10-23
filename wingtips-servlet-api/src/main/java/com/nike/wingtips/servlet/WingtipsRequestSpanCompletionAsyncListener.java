@@ -65,12 +65,36 @@ class WingtipsRequestSpanCompletionAsyncListener implements AsyncListener {
 
     @Override
     public void onTimeout(AsyncEvent event) {
-        completeRequestSpan(event);
+        /*
+            NOTE: Unfortunately the response in the event won't have had its final HTTP status code set yet, so if we
+            call completeRequestSpan() here, we'll get an incorrect HTTP status code tag (and possibly incorrect
+            final span name since it can sometimes be affected by HTTP status code).
+
+            According to the Servlet 3 specification
+            (http://download.oracle.com/otn-pub/jcp/servlet-3.0-fr-eval-oth-JSpec/servlet-3_0-final-spec.pdf),
+            onComplete() should always be called by the container even in the case of timeout or error, and the final
+            HTTP status code should be set by then. So we'll just defer to onComplete() for finalizing the span and do
+            nothing here.
+
+            See sections 2.3.3.3 of the Servlet 3 specification for more details.
+        */
     }
 
     @Override
     public void onError(AsyncEvent event) {
-        completeRequestSpan(event);
+        /*
+            NOTE: Unfortunately the response in the event won't have had its final HTTP status code set yet, so if we
+            call completeRequestSpan() here, we'll get an incorrect HTTP status code tag (and possibly incorrect
+            final span name since it can sometimes be affected by HTTP status code).
+
+            According to the Servlet 3 specification
+            (http://download.oracle.com/otn-pub/jcp/servlet-3.0-fr-eval-oth-JSpec/servlet-3_0-final-spec.pdf),
+            onComplete() should always be called by the container even in the case of timeout or error, and the final
+            HTTP status code should be set by then. So we'll just defer to onComplete() for finalizing the span and do
+            nothing here.
+
+            See sections 2.3.3.3 of the Servlet 3 specification for more details.
+        */
     }
 
     @Override
@@ -85,9 +109,12 @@ class WingtipsRequestSpanCompletionAsyncListener implements AsyncListener {
     }
 
     /**
-     * The response object available from {@code AsyncContext#getResponse()} is only
-     * guaranteed to be a {@code ServletResponse} but it <em>should</em> be an instance of
-     * {@code HttpServletResponse}.
+     * Does the work of doing the final span tagging and naming, and completes the span for {@link
+     * #originalRequestTracingState}. The request, response, and any error needed for the tagging/naming are pulled
+     * from the given {@link AsyncEvent}. This method is configured to only ever execute once (via the
+     * {@link #alreadyCompleted} atomic boolean) - subsequent calls will return immediately without doing anything.
+     *
+     * @param event The {@link AsyncEvent} that triggered finalizing the request span.
      */
     @SuppressWarnings("deprecation")
     protected void completeRequestSpan(AsyncEvent event) {

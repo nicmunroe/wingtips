@@ -166,7 +166,7 @@ public class ApacheHttpClientWithWingtipsComponentTest {
         );
 
         if (subspanOptionOn) {
-            verifySpanTags(
+            verifySpanNameAndTags(
                 findApacheHttpClientSpanFromCompletedSpans(),
                 "GET " + pathTemplateForTags,
                 "GET",
@@ -199,7 +199,7 @@ public class ApacheHttpClientWithWingtipsComponentTest {
         return httpClientSpans.get(0);
     }
 
-    private void verifySpanTags(
+    private void verifySpanNameAndTags(
         Span span,
         String expectedSpanName,
         String expectedHttpMethodTagValue,
@@ -267,7 +267,7 @@ public class ApacheHttpClientWithWingtipsComponentTest {
         );
 
         if (subspanOptionOn) {
-            verifySpanTags(
+            verifySpanNameAndTags(
                 findApacheHttpClientSpanFromCompletedSpans(),
                 "GET " + pathTemplateForTags,
                 "GET",

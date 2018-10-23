@@ -14,19 +14,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -120,7 +119,7 @@ public class ServletRuntimeTest {
 
     @Test
     public void servlet2_setupTracingCompletionWhenAsyncRequestCompletes_should_throw_IllegalStateException(
-    ) throws ServletException, IOException {
+    ) {
         // when
         Throwable ex = catchThrowable(
             () -> servlet2Runtime.setupTracingCompletionWhenAsyncRequestCompletes(
@@ -176,7 +175,7 @@ public class ServletRuntimeTest {
 
     @Test
     public void setupTracingCompletionWhenAsyncRequestCompletes_should_add_WingtipsRequestSpanCompletionAsyncListener(
-    ) throws ServletException, IOException {
+    ) {
         // given
         AsyncContext asyncContextMock = mock(AsyncContext.class);
         doReturn(asyncContextMock).when(requestMock).getAsyncContext();
@@ -194,13 +193,15 @@ public class ServletRuntimeTest {
         );
 
         // then
-        verify(asyncContextMock).addListener(listenerCaptor.capture());
+        verify(asyncContextMock).addListener(listenerCaptor.capture(), eq(requestMock), eq(responseMock));
         List<AsyncListener> addedListeners = listenerCaptor.getAllValues();
         assertThat(addedListeners).hasSize(1);
         assertThat(addedListeners.get(0)).isInstanceOf(WingtipsRequestSpanCompletionAsyncListener.class);
         WingtipsRequestSpanCompletionAsyncListener listener =
             (WingtipsRequestSpanCompletionAsyncListener)addedListeners.get(0);
         assertThat(listener.originalRequestTracingState).isSameAs(tracingStateMock);
+        assertThat(listener.tagAndNamingStrategy).isSameAs(tagStrategyMock);
+        assertThat(listener.tagAndNamingAdapter).isSameAs(tagAdapterMock);
     }
 
     @DataProvider(value = {

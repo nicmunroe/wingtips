@@ -389,4 +389,10 @@ public class HttpSpanFactoryTest {
         // then
         assertThat(result).isEqualTo(expectedResult);
     }
+
+    @Test
+    public void getSpanName_returns_UNKNOWN_HTTP_METHOD_when_passed_null_request() {
+        // expect
+        assertThat(HttpSpanFactory.getSpanName(null)).isEqualTo("UNKNOWN_HTTP_METHOD");
+    }
 }

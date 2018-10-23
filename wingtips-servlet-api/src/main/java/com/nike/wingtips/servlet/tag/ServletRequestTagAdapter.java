@@ -1,5 +1,6 @@
 package com.nike.wingtips.servlet.tag;
 
+import com.nike.internal.util.StringUtils;
 import com.nike.wingtips.servlet.HttpSpanFactory;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 
@@ -48,20 +49,21 @@ public class ServletRequestTagAdapter extends HttpTagAndSpanNamingAdapter<HttpSe
         return null;
     }
 
-    /**
-     * The default is to use {@code request.getRequestURI()}.
-     * Another plausible alternative the full URL without parameters: {@code request.getRequestURL()}
-     *
-     * @param request
-     *     - The {@code HttpServletRequest}
-     */
     @Override
     public @Nullable String getRequestUrl(@Nullable HttpServletRequest request) {
         if (request == null) {
             return null;
         }
-        
-        return request.getRequestURL().toString();
+
+        // request.getRequestURL() won't have a query string, so we need to separately look for it and add it
+        //      if necessary.
+        StringBuffer requestUrl = request.getRequestURL();
+        String queryString = request.getQueryString();
+        if (StringUtils.isNotBlank(queryString)) {
+            requestUrl.append('?').append(queryString);
+        }
+
+        return requestUrl.toString();
     }
 
     @Override

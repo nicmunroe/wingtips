@@ -162,8 +162,8 @@ abstract class ServletRuntime {
         ) {
             // Async processing was started, so we have to complete it with a listener.
             asyncRequest.getAsyncContext().addListener(
-                new WingtipsRequestSpanCompletionAsyncListener(originalRequestTracingState, tagAndNamingStrategy,
-                                                               tagAndNamingAdapter
+                new WingtipsRequestSpanCompletionAsyncListener(
+                    originalRequestTracingState, tagAndNamingStrategy, tagAndNamingAdapter
                 ),
                 asyncRequest,
                 asyncResponse
