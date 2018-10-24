@@ -16,13 +16,13 @@ dependencies {
     )
     testCompile(
             project(":wingtips-servlet-api"),
-            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "junit:junit-dep:$junitVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
             "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "commons-io:commons-io:$apacheCommonsIoVersion",
             "org.springframework.boot:spring-boot-starter-web:$springbootVersion"
     )

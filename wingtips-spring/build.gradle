@@ -11,14 +11,14 @@ dependencies {
     )
     compileOnly(
             "org.springframework:spring-web:$springVersion",
-            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
-            'io.zipkin.brave:brave-instrumentation-spring-web:5.2.0'
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testCompile(
             "junit:junit-dep:$junitVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "org.assertj:assertj-core:$assertJVersion",
             "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.springframework:spring-web:$springVersion"
     )

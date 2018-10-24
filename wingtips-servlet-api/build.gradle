@@ -12,20 +12,16 @@ dependencies {
     )
     compileOnly(
             "javax.servlet:javax.servlet-api:$servletApiVersion",
-            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
-            'io.zipkin.brave:brave:5.2.0',
-            'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testCompile(
-            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "junit:junit-dep:$junitVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
             "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
-            "org.eclipse.jetty:jetty-webapp:$jettyVersion",
-            'io.zipkin.brave:brave:5.2.0',
-            'io.zipkin.brave:brave-instrumentation-servlet:5.2.0'
+            "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
+            "org.eclipse.jetty:jetty-webapp:$jettyVersion"
     )
 }
