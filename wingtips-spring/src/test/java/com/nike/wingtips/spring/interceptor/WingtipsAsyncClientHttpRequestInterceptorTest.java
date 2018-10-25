@@ -4,6 +4,7 @@ import com.nike.internal.util.Pair;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.Tracer;
+import com.nike.wingtips.spring.interceptor.WingtipsAsyncClientHttpRequestInterceptor.SpanAroundAsyncCallFinisher;
 import com.nike.wingtips.spring.interceptor.tag.SpringHttpClientTagAdapter;
 import com.nike.wingtips.spring.testutils.ArgCapturingHttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.spring.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.InitialSpanNameArgs;
@@ -50,8 +51,12 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 /**
  * Tests the functionality of {@link WingtipsAsyncClientHttpRequestInterceptor}.
@@ -575,5 +580,62 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
 
         // then
         assertThat(result).isEqualTo(expectedResult);
+    }
+
+    // Unlikely to happen in practice, but let's test it anyway.
+    @Test
+    public void createAsyncSubSpanAndExecute_trigger_null_subspanFinisher_in_catch_block_branch_for_code_coverage() {
+        // given
+        Tracer.getInstance().startRequestWithRootSpan("someRootSpan");
+        TracingState tracingStateBeforeInterceptorCall = TracingState.getCurrentThreadTracingState();
+
+        WingtipsAsyncClientHttpRequestInterceptor interceptorSpy = spy(new WingtipsAsyncClientHttpRequestInterceptor(
+            true, tagAndNamingStrategy, tagAndNamingAdapterMock
+        ));
+
+        RuntimeException explodingSubspanNameMethodEx =
+            new RuntimeException("Intentional exception thrown by getSubspanSpanName()");
+
+        doThrow(explodingSubspanNameMethodEx).when(interceptorSpy).getSubspanSpanName(
+            any(HttpRequest.class), any(HttpTagAndSpanNamingStrategy.class), any(HttpTagAndSpanNamingAdapter.class)
+        );
+
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest =
+            new HttpRequestWrapperWithModifiableHeaders(requestMock);
+        byte[] body = new byte[]{42};
+
+
+        // when
+        Throwable ex = catchThrowable(
+            () -> interceptorSpy.createAsyncSubSpanAndExecute(wrapperRequest, body, executionMock)
+        );
+
+        // then
+        assertThat(ex).isSameAs(explodingSubspanNameMethodEx);
+        verify(interceptorSpy).getSubspanSpanName(wrapperRequest, tagAndNamingStrategy, tagAndNamingAdapterMock);
+
+        // TracingState should have been reset even though an exception occurred in some unexpected place.
+        assertThat(normalizeTracingState(TracingState.getCurrentThreadTracingState()))
+            .isEqualTo(normalizeTracingState(tracingStateBeforeInterceptorCall));
+    }
+
+    // Another one that's unlikely to happen in practice, but let's test it anyway.
+    @Test
+    public void SpanAroundAsyncCallFinisher_finishCallSpan_does_nothing_if_spanAroundCallTracingState_is_null() {
+        // given
+        SpanAroundAsyncCallFinisher finisherSpy = spy(new SpanAroundAsyncCallFinisher(
+            null, requestMock, tagAndNamingStrategy, tagAndNamingAdapterMock
+        ));
+
+        ClientHttpResponse responseMock = mock(ClientHttpResponse.class);
+        Throwable errorMock = mock(Throwable.class);
+
+        // when
+        finisherSpy.finishCallSpan(responseMock, errorMock);
+
+        // then
+        verify(finisherSpy).finishCallSpan(responseMock, errorMock);
+        verifyNoMoreInteractions(finisherSpy);
+        verifyZeroInteractions(responseMock, errorMock);
     }
 }
