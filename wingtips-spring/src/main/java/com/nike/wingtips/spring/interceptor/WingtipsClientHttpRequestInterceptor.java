@@ -135,11 +135,15 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
     public ClientHttpResponse intercept(
         HttpRequest request, byte[] body, ClientHttpRequestExecution execution
     ) throws IOException {
+        // We need to wrap the request with HttpRequestWrapperWithModifiableHeaders so that tracing info can be
+        //      propagated on the headers.
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest = new HttpRequestWrapperWithModifiableHeaders(request);
+
         if (surroundCallsWithSubspan) {
-            return createNewSpanAndExecuteRequest(request, body, execution);
+            return createNewSpanAndExecuteRequest(wrapperRequest, body, execution);
         }
 
-        return propagateTracingHeadersAndExecuteRequest(request, body, execution);
+        return propagateTracingHeadersAndExecuteRequest(wrapperRequest, body, execution);
     }
 
     /**
@@ -150,10 +154,8 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
      * @return The result of calling {@link ClientHttpRequestExecution#execute(HttpRequest, byte[])}.
      */
     protected ClientHttpResponse propagateTracingHeadersAndExecuteRequest(
-        HttpRequest request, byte[] body, ClientHttpRequestExecution execution
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest, byte[] body, ClientHttpRequestExecution execution
     ) throws IOException {
-        // Whether a subspan was created or not we want to add the tracing headers with the current span's info.
-        HttpRequest wrapperRequest = new HttpRequestWrapperWithModifiableHeaders(request);
         propagateTracingHeaders(wrapperRequest, Tracer.getInstance().getCurrentSpan());
         
         // Execute the request/interceptor chain.
@@ -162,29 +164,29 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
 
     /**
      * Creates a subspan (or new trace if no current span exists) to surround the HTTP request, then returns the
-     * result of calling {@link
-     * #propagateTracingHeadersAndExecuteRequest(HttpRequest, byte[], ClientHttpRequestExecution)} to actually execute
-     * the request. Span naming and tagging is done here using {@link #tagAndNamingStrategy} and
-     * {@link #tagAndNamingAdapter}.
+     * result of calling {@link #propagateTracingHeadersAndExecuteRequest(HttpRequestWrapperWithModifiableHeaders,
+     * byte[], ClientHttpRequestExecution)} to actually execute the request. Span naming and tagging is done here using
+     * {@link #tagAndNamingStrategy} and {@link #tagAndNamingAdapter}.
      *
      * @return The result of calling {@link
-     * #propagateTracingHeadersAndExecuteRequest(HttpRequest, byte[], ClientHttpRequestExecution)} after surrounding
-     * the request with a subspan (or new trace if no current span exists).
+     * #propagateTracingHeadersAndExecuteRequest(HttpRequestWrapperWithModifiableHeaders, byte[],
+     * ClientHttpRequestExecution)} after surrounding the request with a subspan (or new trace if no current span
+     * exists).
      */
     protected ClientHttpResponse createNewSpanAndExecuteRequest(
-        HttpRequest request, byte[] body, ClientHttpRequestExecution execution
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest, byte[] body, ClientHttpRequestExecution execution
     ) throws IOException {
         // Will start a new trace if necessary, or a subspan if a trace is already in progress.
         Span spanAroundCall = Tracer.getInstance().startSpanInCurrentContext(
-            getSubspanSpanName(request, tagAndNamingStrategy, tagAndNamingAdapter),
+            getSubspanSpanName(wrapperRequest, tagAndNamingStrategy, tagAndNamingAdapter),
             SpanPurpose.CLIENT
         );
 
         Throwable errorForTagging = null;
         ClientHttpResponse response = null;
         try {
-            tagAndNamingStrategy.handleRequestTagging(spanAroundCall, request, tagAndNamingAdapter);
-            response = propagateTracingHeadersAndExecuteRequest(request, body, execution);
+            tagAndNamingStrategy.handleRequestTagging(spanAroundCall, wrapperRequest, tagAndNamingAdapter);
+            response = propagateTracingHeadersAndExecuteRequest(wrapperRequest, body, execution);
 
             return response;
         } catch(Throwable exception) {
@@ -195,7 +197,7 @@ public class WingtipsClientHttpRequestInterceptor implements ClientHttpRequestIn
             try {
                 // Handle response/error tagging and final span name.
                 tagAndNamingStrategy.handleResponseTaggingAndFinalSpanName(
-                    spanAroundCall, request, response, errorForTagging, tagAndNamingAdapter
+                    spanAroundCall, wrapperRequest, response, errorForTagging, tagAndNamingAdapter
                 );
             }
             finally {

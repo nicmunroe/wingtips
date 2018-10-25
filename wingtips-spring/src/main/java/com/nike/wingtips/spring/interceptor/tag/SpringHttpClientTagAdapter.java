@@ -27,12 +27,6 @@ public class SpringHttpClientTagAdapter extends HttpTagAndSpanNamingAdapter<Http
         return DEFAULT_INSTANCE;
     }
 
-    /**
-     * @param request
-     *     - The {@code HttpRequest}
-     *
-     * @return The value for the {@code http.url} tag.  The default is to use the full URL.{@code request.getURI().toString()}.
-     */
     @Override
     public @Nullable String getRequestUrl(@Nullable HttpRequest request) {
         if (request == null) {

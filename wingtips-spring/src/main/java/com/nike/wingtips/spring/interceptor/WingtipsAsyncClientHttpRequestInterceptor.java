@@ -141,11 +141,15 @@ public class WingtipsAsyncClientHttpRequestInterceptor implements AsyncClientHtt
     public ListenableFuture<ClientHttpResponse> intercept(
         HttpRequest request, byte[] body, AsyncClientHttpRequestExecution execution
     ) throws IOException {
+        // We need to wrap the request with HttpRequestWrapperWithModifiableHeaders so that tracing info can be
+        //      propagated on the headers.
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest = new HttpRequestWrapperWithModifiableHeaders(request);
+
         if (surroundCallsWithSubspan) {
-            return createAsyncSubSpanAndExecute(request, body, execution);
+            return createAsyncSubSpanAndExecute(wrapperRequest, body, execution);
         }
         
-        return propagateTracingHeadersAndExecute(request, body, execution);
+        return propagateTracingHeadersAndExecute(wrapperRequest, body, execution);
     }
 
     /**
@@ -156,10 +160,8 @@ public class WingtipsAsyncClientHttpRequestInterceptor implements AsyncClientHtt
      * @return The result of calling {@link AsyncClientHttpRequestExecution#executeAsync(HttpRequest, byte[])}.
      */
     protected ListenableFuture<ClientHttpResponse> propagateTracingHeadersAndExecute(
-        HttpRequest request, byte[] body, AsyncClientHttpRequestExecution execution
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest, byte[] body, AsyncClientHttpRequestExecution execution
     ) throws IOException {
-        // Whether a subspan was created or not we want to add the tracing headers with the current span's info.
-        HttpRequest wrapperRequest = new HttpRequestWrapperWithModifiableHeaders(request);
         propagateTracingHeaders(wrapperRequest, Tracer.getInstance().getCurrentSpan());
 
         // Execute the request/interceptor chain.
@@ -168,18 +170,18 @@ public class WingtipsAsyncClientHttpRequestInterceptor implements AsyncClientHtt
 
     /**
      * Creates a subspan (or new trace if no current span exists) to surround the HTTP request, then returns the
-     * result of calling {@link
-     * #propagateTracingHeadersAndExecute(HttpRequest, byte[], AsyncClientHttpRequestExecution)} to actually execute
-     * the request. A {@link SpanAroundAsyncCallFinisher} will be registered as a callback to finish the subspan when
-     * the request finishes. Request tagging (and initial span naming) is done here, and response tagging (and final
-     * span naming) is done in the {@link SpanAroundAsyncCallFinisher}.
+     * result of calling {@link #propagateTracingHeadersAndExecute(HttpRequestWrapperWithModifiableHeaders, byte[],
+     * AsyncClientHttpRequestExecution)} to actually execute the request. A {@link SpanAroundAsyncCallFinisher} will
+     * be registered as a callback to finish the subspan when the request finishes. Request tagging (and initial span
+     * naming) is done here, and response tagging (and final span naming) is done in the {@link
+     * SpanAroundAsyncCallFinisher}.
      *
-     * @return The result of calling {@link
-     * #propagateTracingHeadersAndExecute(HttpRequest, byte[], AsyncClientHttpRequestExecution)} after surrounding
-     * the request with a subspan (or new trace if no current span exists).
+     * @return The result of calling {@link #propagateTracingHeadersAndExecute(HttpRequestWrapperWithModifiableHeaders,
+     * byte[], AsyncClientHttpRequestExecution)} after surrounding the request with a subspan (or new trace if no
+     * current span exists).
      */
     protected ListenableFuture<ClientHttpResponse> createAsyncSubSpanAndExecute(
-        HttpRequest request, byte[] body, AsyncClientHttpRequestExecution execution
+        HttpRequestWrapperWithModifiableHeaders wrapperRequest, byte[] body, AsyncClientHttpRequestExecution execution
     ) throws IOException {
         // Handle subspan stuff. Start by getting the current thread's tracing state (so we can restore it before
         //      this method returns).
@@ -190,20 +192,22 @@ public class WingtipsAsyncClientHttpRequestInterceptor implements AsyncClientHtt
         try {
             // This will start a new trace if necessary, or a subspan if a trace is already in progress.
             Span subspan = Tracer.getInstance().startSpanInCurrentContext(
-                getSubspanSpanName(request, tagAndNamingStrategy, tagAndNamingAdapter),
+                getSubspanSpanName(wrapperRequest, tagAndNamingStrategy, tagAndNamingAdapter),
                 Span.SpanPurpose.CLIENT
             );
 
             // Add request tags to the subspan.
-            tagAndNamingStrategy.handleRequestTagging(subspan, request, tagAndNamingAdapter);
+            tagAndNamingStrategy.handleRequestTagging(subspan, wrapperRequest, tagAndNamingAdapter);
 
             // Create the callback that will complete the subspan when the request finishes.
             subspanFinisher = new SpanAroundAsyncCallFinisher(
-                TracingState.getCurrentThreadTracingState(), request, tagAndNamingStrategy, tagAndNamingAdapter
+                TracingState.getCurrentThreadTracingState(), wrapperRequest, tagAndNamingStrategy, tagAndNamingAdapter
             );
 
             // Execute the request/interceptor chain, and add the callback to finish the subspan (if one exists).
-            ListenableFuture<ClientHttpResponse> result = propagateTracingHeadersAndExecute(request, body, execution);
+            ListenableFuture<ClientHttpResponse> result = propagateTracingHeadersAndExecute(
+                wrapperRequest, body, execution
+            );
             result.addCallback(subspanFinisher);
 
             return result;
@@ -219,6 +223,7 @@ public class WingtipsAsyncClientHttpRequestInterceptor implements AsyncClientHtt
         }
         finally {
             // Reset back to the original tracing state that was on this thread when this method began.
+            //noinspection deprecation
             unlinkTracingFromCurrentThread(originalThreadInfo);
         }
     }

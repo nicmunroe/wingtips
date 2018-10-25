@@ -178,7 +178,7 @@ public class WingtipsSpringUtil {
      */
     public static String getRequestMethodAsString(HttpMethod method) {
         if (method == null) {
-            return "UNKNOWN";
+            return "UNKNOWN_HTTP_METHOD";
         }
 
         return method.name();
