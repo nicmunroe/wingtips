@@ -52,6 +52,7 @@ of using Wingtips that are simple, compact, and straightforward.
         * [Changing serialized representation of Spans for the logs](#logging_span_representation)
     * [Span Tags](#span_tags)
         * [HTTP Span Tag and Naming Strategies and Adapters](#tag_strategies_and_adapters) 
+        * [Default HTTP Tags](#default_http_tags) 
     * [Custom Annotations](#custom_annotations)
 * [Usage in Reactive Asynchronous Nonblocking Scenarios](#async_usage)
 * [Using Distributed Tracing to Help with Debugging Issues/Errors/Problems](#using_dtracing_for_errors)
@@ -376,6 +377,21 @@ For Spring RestTemplate and AsyncRestTemplate HTTP clients.
 and [WingtipsApacheHttpClientInterceptor](wingtips-apache-http-client/src/main/java/com/nike/wingtips/apache/httpclient/WingtipsApacheHttpClientInterceptor.java) -
 For Apache HttpClient.
  
+<a name="default_http_tags"></a> 
+#### Default HTTP Tags 
+
+The default tag strategy is `ZipkinHttpTagStrategy`. Here's a quick rundown of the tags you get (more info on these 
+tags can be found in `KnownZipkinTags`):
+
+|  Tag               | Description                                             | Example value |
+| :----------------- | :------------------------------------------------------ | :------------ |
+| `http.method`      | The HTTP request method used.                           | `GET` |
+| `http.path`        | The HTTP path of the request (path only, not full URL). | `/some/path`  |
+| `http.url`         | The full URL of the request, including scheme, host, path, and query string.  | `http://some.host/some/path?fooQueryParam=bar` |
+| `http.route`       | The low-cardinality "template" version of the path. i.e. `/some/path/{id}` instead of `/some/path/12345`. This tag will only show up if the library or framework provides a mechanism to determine the path template. If available, it will also be used to help name the span. | `/some/path/{id}` |
+| `http.status_code` | The response HTTP status code.                          | `200`         |
+| `error`            | Only exists if the request is considered an error. If an exception occurred then its message or classname will be used as the tag value. If no exception occurred then the request can still be considered an error if `HttpTagAndSpanNamingAdapter.getErrorResponseTagValue(...)` returns a non-empty value. That value will be used as the tag value. Most HTTP client adapters consider 4xx or 5xx response codes to indicate an error, while server adapters usually only consider 5xx to be an error. In either case adapters often use the response HTTP status code as the error tag value. | `An error occurred while doing foo`, `FooException`, or `500` |
+
 <a name="custom_annotations"></a>
 ### Custom Annotations
 

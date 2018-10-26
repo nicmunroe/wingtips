@@ -114,8 +114,8 @@ to include it for extra debugging info, and for services outside your control yo
 unintentional information leakage.
 
 See the [base project readme's section on propagation](../README.md#propagating_traces) for further details on 
-propagating tracing information. You may also want to consider
-[wrapping downstream calls in a subspan](../README.md#sub_spans_for_downstream_calls) - this is strongly recommended,
+propagating tracing information. You should also
+[wrap downstream calls in a subspan](../README.md#sub_spans_for_downstream_calls) - this is strongly recommended,
 and is effectively non-optional if you want full and complete distributed tracing for your service.
 
 There are some helpers that automate this downstream tracing propagation for various popular HTTP clients, 
