@@ -10,6 +10,7 @@ import com.lightstep.tracer.shared.SpanContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -76,6 +77,8 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
         long lsParentId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getParentSpanId());
         long lsTraceId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getTraceId());
 
+        String tagPurpose = wingtipsSpan.getSpanPurpose().toString();
+
         SpanContext lsSpanContext = new SpanContext(lsTraceId, lsParentId);
 
         try {
@@ -85,8 +88,13 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
                     .withTag("lightstep.trace_id", lsTraceId)
                     .withTag("lightstep.span_id", lsSpanId)
                     .start();
-
-
+            for (Span.TimestampedAnnotation wingtipsAnnotation : wingtipsSpan.getTimestampedAnnotations()) {
+                lsSpan.log(wingtipsAnnotation.getTimestampEpochMicros(), wingtipsAnnotation.getValue());
+            }
+            lsSpan.setTag("span.type", tagPurpose);
+            for (Map.Entry<String, String> wtTag : wingtipsSpan.getTags().entrySet()) {
+                lsSpan.setTag(wtTag.getKey(), wtTag.getValue());
+            }
             lsSpan.finish(stopTimeMicros);
         }
 
