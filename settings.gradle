@@ -19,3 +19,5 @@ include "wingtips-core",
         "samples:sample-jersey2",
         "samples:sample-spring-web-mvc",
         "samples:sample-spring-boot"
+include 'wingtips-lightstep'
+
