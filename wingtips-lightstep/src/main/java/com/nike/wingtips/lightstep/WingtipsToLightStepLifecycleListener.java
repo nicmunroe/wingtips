@@ -5,11 +5,11 @@ import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
 
 import io.opentracing.Tracer;
+import com.lightstep.tracer.shared.SpanContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,18 +72,24 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
         long durationMicros = TimeUnit.NANOSECONDS.toMicros(wingtipsSpan.getDurationNanos());
         long stopTimeMicros = startTimeMicros + durationMicros;
 
-        String lsSpanId = convertWingTipToLightStep(wingtipsSpan.getSpanId());
-        String lsParentId = convertWingTipToLightStep(wingtipsSpan.getParentSpanId());
-        String lsTraceId = convertWingTipToLightStep(wingtipsSpan.getTraceId());
+        long lsSpanId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getSpanId());
+        long lsParentId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getParentSpanId());
+        long lsTraceId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getTraceId());
 
-        // TODO: Replace spancontext object with converted wingtip spancontext (possible long or hex or lowerhex)
+        SpanContext lsSpanContext = new SpanContext(lsTraceId, lsParentId);
+
         try {
             io.opentracing.Span lsSpan = tracer.buildSpan(operationName)
                 .withStartTimestamp(wingtipsSpan.getSpanStartTimeEpochMicros())
-                .start();
+                    .asChildOf(lsSpanContext)
+                    .withTag("lightstep.trace_id", lsTraceId)
+                    .withTag("lightstep.span_id", lsSpanId)
+                    .start();
+
+
             lsSpan.finish(stopTimeMicros);
         }
-        // TODO: refactor/revisit
+
         catch (Throwable ex) {
             long currentBadSpanCount = spanHandlingErrorCounter.incrementAndGet();
             // Adopted from WingtipsToZipkinLifecycleListener from Wingtips-Zipkin2 plugin.
@@ -103,75 +109,6 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
                     currentBadSpanCount, wingtipsSpan.toKeyValueString(), ex.toString()
                 );
             }
-        }
-    }
-
-    private String convertWingTipToLightStep(String wingtipId) {
-        if (isAllowedNumChars(wingtipId)) {
-            if (isLowerHex(wingtipId)) {
-                // Already lowerhex with correct number of chars, no modifications needed.
-                return wingtipId;
-            }
-            else if (isHex(wingtipId, true)) {
-                // It wasn't lowerhex, but it is hex and it is the correct number of chars.
-                // We can trivially convert to valid lowerhex by lowercasing the ID.
-                String convertedId = wingtipId.toLowerCase();
-                return convertedId;
-            }
-        }
-
-        // If the originalId can be parsed as a long, then its sanitized ID is the lowerhex representation of that long.
-        Long originalIdAsRawLong = attemptToConvertToLong(wingtipId);
-        if (originalIdAsRawLong != null) {
-            String convertedId = TraceAndSpanIdGenerator.longToUnsignedLowerHexString(originalIdAsRawLong);
-            return convertedId;
-        }
-
-        return wingtipId;
-    }
-    /**
-     *
-     */
-    private boolean isLowerHex(String id) {
-        return isHex(id, false);
-    }
-
-    /**
-     * Copied from Wingtips-Zipkin2 and slightly modified.
-     *
-     * @param id The ID to check for hexadecimal conformity.
-     * @return true if the given id is hexadecimal, false if there are any characters that are not hexadecimal, with
-     * the {@code allowUppercase} parameter determining whether uppercase hex characters are allowed.
-     */
-    private boolean isHex(String id, boolean allowUppercase) {
-        for (int i = 0, length = id.length(); i < length; i++) {
-            char c = id.charAt(i);
-            if ((c < '0' || c > '9') && (c < 'a' || c > 'f')) {
-                // Not 0-9, and not a-f. So it's not lowerhex. If we don't allow uppercase then we can return false.
-                if (!allowUppercase) {
-                    return false;
-                }
-                else if (c < 'A' || c > 'F') {
-                    // Uppercase is allowed but it's not A-F either, so we still have to return false.
-                    return false;
-                }
-                // If we reach here inside this if-block, then it's an uppercase A-F and allowUppercase is true, so
-                // do nothing and move onto the next character.
-            }
-        }
-
-        return true;
-    }
-
-    private boolean isAllowedNumChars(final String id) {
-        return id.length() <= 16;
-    }
-
-    private Long attemptToConvertToLong(final String id) {
-        try {
-            return Long.valueOf(id);
-        } catch (final NumberFormatException nfe) {
-            return null;
         }
     }
 }
