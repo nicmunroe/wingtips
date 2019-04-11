@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListener {
 
+    // we borrowed the logging and exception log rate limiting from the Zipkin plugin.
     private final Logger lightStepToWingtipsLogger = LoggerFactory.getLogger("LIGHTSTEP_SPAN_CONVERSION_OR_HANDLING_ERROR");
 
     private final AtomicLong spanHandlingErrorCounter = new AtomicLong(0);
@@ -44,6 +45,8 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
 
     protected Tracer tracer = null;
 
+    // Basic constructor which requires values to configure tracer and point span traffic from the transport library
+    // to the LightStep Satellites.
     public WingtipsToLightStepLifecycleListener(String serviceName, String accessToken, String satelliteUrl, int satellitePort) {
         this.serviceName = serviceName;
         this.accessToken = accessToken;
@@ -80,8 +83,14 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
     public void spanCompleted(Span wingtipsSpan) {
         String operationName = wingtipsSpan.getSpanName();
         long startTimeMicros = wingtipsSpan.getSpanStartTimeEpochMicros();
+
+        // Given we should only be in this method on span completion, we are not going to wrap this conversion in a
+        // try/catch. duration should be set on the Wingtips span.
         long durationMicros = TimeUnit.NANOSECONDS.toMicros(wingtipsSpan.getDurationNanos());
         long stopTimeMicros = startTimeMicros + durationMicros;
+
+        // parentId will get changed to reflect the Wingtips parent id. If there is no id then a value of 0 will get
+        // converted into null on the LightStep Satellite. LightStep will require our Ids to be in long format.
         long lsParentId = 0;
         long lsSpanId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getSpanId());
         long lsTraceId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getTraceId());
@@ -90,6 +99,8 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
             lsParentId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getParentSpanId());
         }
 
+        // LightStep doesn't have the concept of purpose, but we use the OT semantic idea of span kind, including
+        // server and client. These are added as tags.
         String tagPurpose = wingtipsSpan.getSpanPurpose().toString();
 
         SpanContext lsSpanContext = new SpanContext(lsTraceId, lsParentId);
@@ -112,7 +123,8 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
             for (Map.Entry<String, String> wtTag : wingtipsSpan.getTags().entrySet()) {
                 lsSpan.setTag(wtTag.getKey(), wtTag.getValue());
             }
-
+            // on finish, the tracer library initialized on the creation of this listener will cache and transport the span
+            // data to the LightStep Satellite.
             lsSpan.finish(stopTimeMicros);
 
         } catch (Throwable ex) {
