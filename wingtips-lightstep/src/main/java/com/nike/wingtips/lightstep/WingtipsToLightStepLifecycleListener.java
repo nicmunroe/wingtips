@@ -37,22 +37,32 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
     private long lastSpanHandlingErrorLogTimeEpochMillis = 0;
     private static final long MIN_SPAN_HANDLING_ERROR_LOG_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(60);
 
-    private Tracer tracer = null;
+    protected String serviceName;
+    protected String accessToken;
+    protected String satelliteUrl;
+    protected int satellitePort;
 
-    public WingtipsToLightStepLifecycleListener(String serviceName, String accessToken, String satelliteUrl, int satellitePort ) {
+    protected Tracer tracer = null;
+
+    public WingtipsToLightStepLifecycleListener(String serviceName, String accessToken, String satelliteUrl, int satellitePort) {
+        this.serviceName = serviceName;
+        this.accessToken = accessToken;
+        this.satelliteUrl = satelliteUrl;
+        this.satellitePort = satellitePort;
+
         try {
-            tracer = new com.lightstep.tracer.jre.JRETracer(
-                new com.lightstep.tracer.shared.Options.OptionsBuilder()
-                    .withAccessToken(accessToken)
-                    .withComponentName(serviceName)
-                    .withCollectorHost(satelliteUrl)
-                    .withCollectorPort(satellitePort)
-                    .build()
+            this.tracer = new com.lightstep.tracer.jre.JRETracer(
+                    new com.lightstep.tracer.shared.Options.OptionsBuilder()
+                            .withAccessToken(this.accessToken)
+                            .withComponentName(this.serviceName)
+                            .withCollectorHost(this.satelliteUrl)
+                            .withCollectorPort(this.satellitePort)
+                            .withVerbosity(4)
+                            .build()
             );
-        }
-        catch (Throwable ex) {
+        } catch (Throwable ex) {
             lightStepToWingtipsLogger.warn(
-                "There has been an issue with initializing the LightStep tracer: ", ex.toString());
+                    "There has been an issue with initializing the LightStep tracer: ", ex.toString());
         }
     }
 
@@ -72,10 +82,13 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
         long startTimeMicros = wingtipsSpan.getSpanStartTimeEpochMicros();
         long durationMicros = TimeUnit.NANOSECONDS.toMicros(wingtipsSpan.getDurationNanos());
         long stopTimeMicros = startTimeMicros + durationMicros;
-
+        long lsParentId = 0;
         long lsSpanId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getSpanId());
-        long lsParentId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getParentSpanId());
         long lsTraceId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getTraceId());
+
+        if (wingtipsSpan.getParentSpanId() != null) {
+            lsParentId = TraceAndSpanIdGenerator.unsignedLowerHexStringToLong(wingtipsSpan.getParentSpanId());
+        }
 
         String tagPurpose = wingtipsSpan.getSpanPurpose().toString();
 
@@ -83,28 +96,33 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
 
         try {
             io.opentracing.Span lsSpan = tracer.buildSpan(operationName)
-                .withStartTimestamp(wingtipsSpan.getSpanStartTimeEpochMicros())
+                    .withStartTimestamp(wingtipsSpan.getSpanStartTimeEpochMicros())
                     .asChildOf(lsSpanContext)
+                    .ignoreActiveSpan()
                     .withTag("lightstep.trace_id", lsTraceId)
                     .withTag("lightstep.span_id", lsSpanId)
                     .start();
+
             for (Span.TimestampedAnnotation wingtipsAnnotation : wingtipsSpan.getTimestampedAnnotations()) {
                 lsSpan.log(wingtipsAnnotation.getTimestampEpochMicros(), wingtipsAnnotation.getValue());
             }
+
             lsSpan.setTag("span.type", tagPurpose);
+
             for (Map.Entry<String, String> wtTag : wingtipsSpan.getTags().entrySet()) {
                 lsSpan.setTag(wtTag.getKey(), wtTag.getValue());
             }
-            lsSpan.finish(stopTimeMicros);
-        }
 
-        catch (Throwable ex) {
+            lsSpan.finish(stopTimeMicros);
+
+        } catch (Throwable ex) {
             long currentBadSpanCount = spanHandlingErrorCounter.incrementAndGet();
             // Adopted from WingtipsToZipkinLifecycleListener from Wingtips-Zipkin2 plugin.
             // Only log once every MIN_SPAN_HANDLING_ERROR_LOG_INTERVAL_MILLIS time interval to prevent log spam from a
             // malicious (or broken) caller.
             long currentTimeMillis = System.currentTimeMillis();
             long timeSinceLastLogMsgMillis = currentTimeMillis - lastSpanHandlingErrorLogTimeEpochMillis;
+
             if (timeSinceLastLogMsgMillis >= MIN_SPAN_HANDLING_ERROR_LOG_INTERVAL_MILLIS) {
                 // We're not synchronizing the read and write to lastSpanHandlingErrorLogTimeEpochMillis, and that's ok.
                 // If we get a few extra log messages due to a race condition it's not the end of the world - we're
@@ -112,12 +130,11 @@ public class WingtipsToLightStepLifecycleListener implements SpanLifecycleListen
                 lastSpanHandlingErrorLogTimeEpochMillis = currentTimeMillis;
 
                 lightStepToWingtipsLogger.warn(
-                    "There have been {} spans that were not LightStep compatible, or that experienced an error during span handling. Latest example: "
-                        + "wingtips_span_with_error=\"{}\", conversion_or_handling_error=\"{}\"",
-                    currentBadSpanCount, wingtipsSpan.toKeyValueString(), ex.toString()
+                        "There have been {} spans that were not LightStep compatible, or that experienced an error during span handling. Latest example: "
+                                + "wingtips_span_with_error=\"{}\", conversion_or_handling_error=\"{}\"",
+                        currentBadSpanCount, wingtipsSpan.toKeyValueString(), ex.toString()
                 );
             }
         }
     }
 }
-

@@ -1,7 +1,4 @@
-group 'com.nike.wingtips'
-version '0.1'
-
-sourceCompatibility = 1.8
+evaluationDependsOn(':')
 
 repositories {
     mavenCentral()
@@ -10,10 +7,13 @@ repositories {
 dependencies {
     compile(
             project(":wingtips-core"),
-            "com.lightstep.tracer:lightstep-tracer-jre:0.15.4",
-            "com.lightstep.tracer:tracer-okhttp:0.16.2",
-            "io.grpc:grpc-netty:1.14.0",
-            "io.netty:netty-tcnative-boringssl-static:2.0.12.Final",
-            "io.opentracing:opentracing-java:0.31.0"
+            "com.lightstep.tracer:lightstep-tracer-jre:$lightstepTracerVersion",
+            "com.lightstep.tracer:tracer-okhttp:$lightstepHttpVersion",
+            "io.grpc:grpc-netty:$grpcNettyVersion",
+            "io.netty:netty-tcnative-boringssl-static:$nettyTcnativeBoringVersion",
+    )
+    testCompile(
+            "junit:junit-dep:$junitVersion",
+            "org.mockito:mockito-core:$mockitoVersion",
     )
 }
