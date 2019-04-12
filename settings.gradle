@@ -12,6 +12,7 @@ include "wingtips-core",
         "wingtips-zipkin2-spring-boot",
         "wingtips-apache-http-client",
         "wingtips-jersey2",
+        "wingtips-lightstep",
         // Test-only modules (not published)
         "testonly:testonly-old-servlet",
         // Sample modules (not published)
@@ -19,5 +20,4 @@ include "wingtips-core",
         "samples:sample-jersey2",
         "samples:sample-spring-web-mvc",
         "samples:sample-spring-boot"
-include 'wingtips-lightstep'
 
