@@ -47,7 +47,7 @@ allprojects {
         // Minimize console spam while running tests without swallowing critical debugging info.
         testLogging {
             exceptionFormat "FULL"
-            events "passed", "skipped", "failed"
+            events "started", "passed", "skipped", "failed", "standardOut", "standardError"
             displayGranularity = 0
             showExceptions true
             showCauses true
@@ -56,6 +56,9 @@ allprojects {
 
         ignoreFailures = false
     }
+
+    javadocJar.enabled = false
+    javadoc.enabled = false
 
     // http://www.gradle.org/docs/current/userguide/java_plugin.html
     sourceCompatibility = JavaVersion.VERSION_1_7
@@ -160,7 +163,7 @@ apply from: file(rootProject.projectDir.getAbsolutePath() + '/gradle/junitComboT
 
 // ========== JACOCO SETUP - View the combined/merged report at: [project_root]/build/reports/jacoco/jacocoRootReport/html/index.html.
 //                           Individual reports for each submodule can be found at: [project_root]/[submodule]/build/reports/jacoco/test/html/index.html
-apply from: file(rootProject.projectDir.getAbsolutePath() + '/gradle/jacoco.gradle')
+//apply from: file(rootProject.projectDir.getAbsolutePath() + '/gradle/jacoco.gradle')
 
 // ========== BINTRAY PUBLISHING
 apply from: file(rootProject.projectDir.getAbsolutePath() + '/gradle/bintrayPublishing.gradle')
