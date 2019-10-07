@@ -594,32 +594,31 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
         @Override
         public void onSubscribe(Subscription subscription) {
             // Wrap the subscription so that we can complete the overall request span if the subscription is cancelled.
-//            Subscription subscriptionWrapper = new Subscription() {
-//                @Override
-//                public void request(long n) {
-//                    subscription.request(n);
-//                }
-//
-//                @Override
-//                public void cancel() {
-//                    // It doesn't appear that Webflux server calls can be cancelled under normal circumstances,
-//                    //      but if it does happen then we should finish the span like any other terminal event.
-//                    runnableWithTracing(
-//                        () -> {
-//                            logger.info("IN SUBSCRIPTION.CANCEL()", new Exception("Synthetic ex for stack trace"));
-//                            subscription.cancel();
-//                            finalizeAndCompleteOverallRequestSpanAttachedToCurrentThread(
-//                                exchange, null, tagAndNamingStrategy, tagAndNamingAdapter,
+            Subscription subscriptionWrapper = new Subscription() {
+                @Override
+                public void request(long n) {
+                    subscription.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    // It doesn't appear that Webflux server calls can be cancelled under normal circumstances,
+                    //      but if it does happen then we should finish the span like any other terminal event.
+                    runnableWithTracing(
+                        () -> {
+                            logger.info("IN SUBSCRIPTION.CANCEL()", new Exception("Synthetic ex for stack trace"));
+                            subscription.cancel();
+                            finalizeAndCompleteOverallRequestSpanAttachedToCurrentThread(
+                                exchange, null, tagAndNamingStrategy, tagAndNamingAdapter//,
 //                                Pair.of("cancelled", "true"),
 //                                Pair.of(KnownZipkinTags.ERROR, "CANCELLED")
-//                            );
-//                        },
-//                        overallRequestTracingState
-//                    ).run();
-//                }
-//            };
-//            this.actual.onSubscribe(subscriptionWrapper);
-            this.actual.onSubscribe(subscription);
+                            );
+                        },
+                        overallRequestTracingState
+                    ).run();
+                }
+            };
+            this.actual.onSubscribe(subscriptionWrapper);
         }
 
         @Override
