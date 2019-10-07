@@ -561,6 +561,8 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
      */
     protected static final class WingtipsWebFilterTracingSubscriber implements CoreSubscriber<Void> {
 
+        private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
         protected final @NotNull CoreSubscriber<? super Void> actual;
         protected final @NotNull ServerWebExchange exchange;
         protected final @NotNull Context subscriberContext;
@@ -604,6 +606,7 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
                     //      but if it does happen then we should finish the span like any other terminal event.
                     runnableWithTracing(
                         () -> {
+                            logger.info("IN SUBSCRIPTION.CANCEL()", new Exception("Synthetic ex for stack trace"));
                             subscription.cancel();
                             finalizeAndCompleteOverallRequestSpanAttachedToCurrentThread(
                                 exchange, null, tagAndNamingStrategy, tagAndNamingAdapter,
@@ -621,6 +624,7 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
         @Override
         public void onNext(Void aVoid) {
             // This should never be called in reality, but if it is then pass the call through to the actual subscriber.
+            logger.info("IN ONNEXT()", new Exception("Synthetic ex for stack trace"));
             actual.onNext(aVoid);
         }
 
@@ -628,6 +632,7 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
         public void onError(Throwable t) {
             runnableWithTracing(
                 () -> {
+                    logger.info("IN ONERROR()", new Exception("Synthetic ex for stack trace"));
                     this.actual.onError(t);
                     finalizeAndCompleteOverallRequestSpanAttachedToCurrentThread(
                         exchange, t, tagAndNamingStrategy, tagAndNamingAdapter
@@ -641,6 +646,7 @@ public class WingtipsSpringWebfluxWebFilter implements WebFilter, Ordered {
         public void onComplete() {
             runnableWithTracing(
                 () -> {
+                    logger.info("IN ONCOMPLETE()", new Exception("Synthetic ex for stack trace"));
                     this.actual.onComplete();
                     finalizeAndCompleteOverallRequestSpanAttachedToCurrentThread(
                         exchange, null, tagAndNamingStrategy, tagAndNamingAdapter
