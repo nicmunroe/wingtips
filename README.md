@@ -675,7 +675,7 @@ See the sample app readmes for further information on building and running the s
 Wingtips is released under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
                      
 [maven_central]:https://search.maven.org/search?q=g:com.nike.wingtips
-[maven_central_img]:https://maven-badges.herokuapp.com/maven-central/com.nike.wingtips/wingtips-core/badge.svg?style=flat
+[maven_central_img]:https://img.shields.io/maven-central/v/com.nike.wingtips/wingtips-core
 
 [gh_action_build]:https://github.com/Nike-Inc/wingtips/actions/workflows/build.yml
 [gh_action_build_img]:https://github.com/Nike-Inc/wingtips/actions/workflows/build.yml/badge.svg
