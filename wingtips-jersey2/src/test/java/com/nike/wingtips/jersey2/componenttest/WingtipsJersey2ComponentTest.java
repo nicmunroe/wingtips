@@ -11,11 +11,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -53,7 +53,7 @@ public class WingtipsJersey2ComponentTest {
 
     private SpanRecorder spanRecorder;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         server = createServer(SERVER_PORT);
         server.start();
@@ -65,7 +65,7 @@ public class WingtipsJersey2ComponentTest {
         throw new IllegalStateException("Server is not up after waiting 10 seconds. Aborting tests.");
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         if (server != null) {
             server.stop();
@@ -73,7 +73,7 @@ public class WingtipsJersey2ComponentTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         clearTracerSpanLifecycleListeners();
 
@@ -81,7 +81,7 @@ public class WingtipsJersey2ComponentTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         clearTracerSpanLifecycleListeners();
     }

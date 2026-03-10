@@ -1,7 +1,7 @@
 package com.nike.wingtips.apache.httpclient.util;
 
 import org.apache.http.HttpRequest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 

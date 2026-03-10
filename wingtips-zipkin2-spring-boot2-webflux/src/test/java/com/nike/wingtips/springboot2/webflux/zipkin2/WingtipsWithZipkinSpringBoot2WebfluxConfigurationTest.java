@@ -13,13 +13,9 @@ import com.nike.wingtips.zipkin2.WingtipsToZipkinLifecycleListener;
 import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverter;
 import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverterDefaultImpl;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
@@ -45,21 +41,24 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsWithZipkinSpringBoot2WebfluxConfiguration}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsWithZipkinSpringBoot2WebfluxConfigurationTest {
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         clearTracerSpanLifecycleListeners();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         clearTracerSpanLifecycleListeners();
     }
@@ -114,14 +113,18 @@ public class WingtipsWithZipkinSpringBoot2WebfluxConfigurationTest {
         }
     }
 
-    @DataProvider(value = {
-        "NULL_DEFAULT_OVERRIDES",
-        "NO_OVERRIDES",
-        "WITH_REPORTER_OVERRIDE",
-        "WITH_CONVERTER_OVERRIDE",
-        "WITH_REPORTER_AND_CONVERTER_OVERRIDE"
-    })
-    @Test
+    public static Stream<Arguments> constructor_registers_WingtipsToZipkinLifecycleListener_with_expected_values_DataProvider() {
+        return Stream.of(
+            Arguments.of(DefaultOverridesScenario.NULL_DEFAULT_OVERRIDES),
+            Arguments.of(DefaultOverridesScenario.NO_OVERRIDES),
+            Arguments.of(DefaultOverridesScenario.WITH_REPORTER_OVERRIDE),
+            Arguments.of(DefaultOverridesScenario.WITH_CONVERTER_OVERRIDE),
+            Arguments.of(DefaultOverridesScenario.WITH_REPORTER_AND_CONVERTER_OVERRIDE)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_registers_WingtipsToZipkinLifecycleListener_with_expected_values_DataProvider")
     public void constructor_registers_WingtipsToZipkinLifecycleListener_with_expected_values(
         DefaultOverridesScenario scenario
     ) throws MalformedURLException {
@@ -172,7 +175,7 @@ public class WingtipsWithZipkinSpringBoot2WebfluxConfigurationTest {
 
             assertThat(config.zipkinReporterOverride).isNull();
         }
-        
+
         if (scenario.defaultOverrides == null || scenario.defaultOverrides.zipkinSpanConverter == null) {
             assertThat(zipkinSpanConverter).isInstanceOf(WingtipsToZipkinSpanConverterDefaultImpl.class);
             assertThat(config.zipkinSpanConverterOverride).isNull();
@@ -239,15 +242,20 @@ public class WingtipsWithZipkinSpringBoot2WebfluxConfigurationTest {
     //      we should not get multiple bean definition errors even when WingtipsSpringBoot2WebfluxConfiguration is *both*
     //      component scanned *and* imported manually.
     // We also test that app-specific overrides of certain things are honored/used (e.g. Zipkin Reporter).
-    @DataProvider(value = {
-        "MANUAL_IMPORT_ONLY",
-        "COMPONENT_SCAN_ONLY",
-        "BOTH_MANUAL_AND_COMPONENT_SCAN",
-        "WITH_ZIPKIN_REPORTER_OVERRIDE",
-        "WITH_CONVERTER_OVERRIDE",
-        "WITH_BOTH_REPORTER_AND_CONVERTER_OVERRIDES"
-    })
-    @Test
+
+    public static Stream<Arguments> component_test_DataProvider() {
+        return Stream.of(
+            Arguments.of(ComponentTestSetup.MANUAL_IMPORT_ONLY),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_ONLY),
+            Arguments.of(ComponentTestSetup.BOTH_MANUAL_AND_COMPONENT_SCAN),
+            Arguments.of(ComponentTestSetup.WITH_ZIPKIN_REPORTER_OVERRIDE),
+            Arguments.of(ComponentTestSetup.WITH_CONVERTER_OVERRIDE),
+            Arguments.of(ComponentTestSetup.WITH_BOTH_REPORTER_AND_CONVERTER_OVERRIDES)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("component_test_DataProvider")
     public void component_test(ComponentTestSetup componentTestSetup) {
         // given
         int serverPort = findFreePort();

@@ -18,14 +18,9 @@ import com.nike.wingtips.testutils.TestUtils.SpanRecorder;
 import com.nike.wingtips.testutils.Whitebox;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.reactivestreams.Subscription;
 import org.springframework.http.HttpHeaders;
@@ -73,13 +68,15 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link WingtipsSpringWebfluxExchangeFilterFunction}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
 
     private WingtipsSpringWebfluxExchangeFilterFunction filterSpy;
@@ -102,7 +99,7 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
 
     private SpanRecorder spanRecorder;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
     public void beforeMethod() {
         resetTracing();
@@ -139,7 +136,7 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         doReturn(nextExchangeFunctionResult).when(nextExchangeFunctionMock).exchange(any(ClientRequest.class));
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -173,11 +170,15 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             .isSameAs(SpringWebfluxClientRequestTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> single_arg_constructor_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("single_arg_constructor_works_as_expected_DataProvider")
     public void single_arg_constructor_works_as_expected(boolean subspanOptionOn) {
         // when
         WingtipsSpringWebfluxExchangeFilterFunction impl = new WingtipsSpringWebfluxExchangeFilterFunction(
@@ -192,11 +193,15 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             .isSameAs(SpringWebfluxClientRequestTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> kitchen_sink_constructor_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("kitchen_sink_constructor_works_as_expected_DataProvider")
     public void kitchen_sink_constructor_works_as_expected(boolean subspanOptionOn) {
         // when
         WingtipsSpringWebfluxExchangeFilterFunction impl = new WingtipsSpringWebfluxExchangeFilterFunction(
@@ -236,16 +241,13 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             this.expectedErrorMessage = expectedErrorMessage;
         }
     }
-
-    @DataProvider
-    public static List<List<NullConstructorArgScenario>> nullConstructorArgScenarioDataProvider() {
+    public static Stream<Arguments> nullConstructorArgScenario_DataProvider() {
         return Stream.of(NullConstructorArgScenario.values())
-                     .map(Collections::singletonList)
-                     .collect(Collectors.toList());
+                     .map(Arguments::of);
     }
 
-    @UseDataProvider("nullConstructorArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("nullConstructorArgScenario_DataProvider")
     public void kitchen_sink_constructor_throws_NullPointerException_if_certain_args_are_null(
         NullConstructorArgScenario scenario
     ) {
@@ -327,16 +329,13 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             }
         }
     }
-
-    @DataProvider
-    public static List<List<ThreadAndRequestTracingStateScenario>> threadAndRequestTracingStateScenarioDataProvider() {
+    public static Stream<Arguments> threadAndRequestTracingStateScenario_DataProvider() {
         return Stream.of(ThreadAndRequestTracingStateScenario.values())
-                     .map(Collections::singletonList)
-                     .collect(Collectors.toList());
+                     .map(Arguments::of);
     }
 
-    @UseDataProvider("threadAndRequestTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("threadAndRequestTracingStateScenario_DataProvider")
     public void filter_delegates_to_doFilterForCurrentThreadTracingState_with_expected_tracing_state_attached_to_thread_when_delegate_method_is_executed(
         ThreadAndRequestTracingStateScenario scenarioSetup
     ) {
@@ -361,11 +360,15 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         assertThat(tracingStateWhenDelegateMethodCalled.get()).isEqualTo(scenario.expectedTracingStateUsed);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> doFilterForCurrentThreadTracingState_delegates_to_expected_method_depending_on_value_of_surroundCallsWithSubspan_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doFilterForCurrentThreadTracingState_delegates_to_expected_method_depending_on_value_of_surroundCallsWithSubspan_DataProvider")
     @SuppressWarnings("unchecked")
     public void doFilterForCurrentThreadTracingState_delegates_to_expected_method_depending_on_value_of_surroundCallsWithSubspan(
         boolean subspanOptionOn
@@ -409,13 +412,17 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         }
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> propagateTracingHeadersAndExecute_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeadersAndExecute_works_as_expected_DataProvider")
     public void propagateTracingHeadersAndExecute_works_as_expected(
         boolean reqAttrAndMonoContextTracingStateIsNull, boolean propagationSpanHasParent
     ) {
@@ -479,11 +486,15 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             .isEqualTo((expectedParentSpanId == null) ? null : singletonList(expectedParentSpanId));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createAsyncSubSpanAndExecute_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createAsyncSubSpanAndExecute_works_as_expected_DataProvider")
     public void createAsyncSubSpanAndExecute_works_as_expected(
         boolean baseTracingStateExists
     ) {
@@ -578,11 +589,15 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         assertThat(spanRecorder.completedSpans).isEqualTo(singletonList(propagatedSpan));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createAsyncSubSpanAndExecute_handles_unexpected_exception_from_filter_chain_by_completing_span_around_call_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createAsyncSubSpanAndExecute_handles_unexpected_exception_from_filter_chain_by_completing_span_around_call_DataProvider")
     public void createAsyncSubSpanAndExecute_handles_unexpected_exception_from_filter_chain_by_completing_span_around_call(
         boolean baseTracingStateExists
     ) {
@@ -664,14 +679,12 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             this.extraCustomTags = extraCustomTags;
         }
     }
-
-    @DataProvider
-    public static List<List<ExtraCustomTagsScenario>> extraCustomTagsScenarioDataProvider() {
-        return Stream.of(ExtraCustomTagsScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> extraCustomTagsScenario_DataProvider() {
+        return Stream.of(ExtraCustomTagsScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("extraCustomTagsScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("extraCustomTagsScenario_DataProvider")
     public void completeSubspanAttachedToCurrentThread_works_as_expected_happy_path(
         ExtraCustomTagsScenario scenario
     ) {
@@ -819,16 +832,20 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         assertThat(spanRecorder.completedSpans).isEmpty();
     }
 
-    @DataProvider(value = {
-        "spanNameFromStrategy   |   PATCH           |   spanNameFromStrategy",
-        "null                   |   PATCH           |   webflux_downstream_call-PATCH",
-        "                       |   PATCH           |   webflux_downstream_call-PATCH",
-        "[whitespace]           |   PATCH           |   webflux_downstream_call-PATCH",
-        "null                   |   null            |   webflux_downstream_call-UNKNOWN_HTTP_METHOD",
-        "null                   |                   |   webflux_downstream_call-UNKNOWN_HTTP_METHOD",
-        "null                   |   [whitespace]    |   webflux_downstream_call-UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSubspanSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("spanNameFromStrategy", "PATCH", "spanNameFromStrategy"),
+            Arguments.of(null, "PATCH", "webflux_downstream_call-PATCH"),
+            Arguments.of("", "PATCH", "webflux_downstream_call-PATCH"),
+            Arguments.of("[whitespace]", "PATCH", "webflux_downstream_call-PATCH"),
+            Arguments.of(null, null, "webflux_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, "", "webflux_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, "[whitespace]", "webflux_downstream_call-UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSubspanSpanName_works_as_expected_DataProvider")
     public void getSubspanSpanName_works_as_expected(String strategyResult, String httpMethod, String expectedResult) {
         // given
         if ("[whitespace]".equals(strategyResult)) {
@@ -852,13 +869,17 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
         strategyInitialSpanNameArgs.get().verifyArgs(requestMock, tagAndNamingAdapterMock);
     }
 
-    @DataProvider(value = {
-        "GET    |   GET",
-        "POST   |   POST",
-        "PATCH  |   PATCH",
-        "null   |   UNKNOWN_HTTP_METHOD"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestMethodAsString_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(HttpMethod.GET, "GET"),
+            Arguments.of(HttpMethod.POST, "POST"),
+            Arguments.of(HttpMethod.PATCH, "PATCH"),
+            Arguments.of(null, "UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestMethodAsString_works_as_expected_DataProvider")
     public void getRequestMethodAsString_works_as_expected(HttpMethod method, String expectedResult) {
         // when
         String result = filterSpy.getRequestMethodAsString(method);
@@ -889,14 +910,14 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
     }
 
     // ========== Tests for WingtipsExchangeFilterFunctionTracingCompletionMonoWrapper inner class ============
-    
+
     @Test
     public void WingtipsExchangeFilterFunctionTracingCompletionMonoWrapper_constructor_sets_fields_as_expected() {
         // given
         @SuppressWarnings("unchecked")
         Mono<ClientResponse> sourceMock = mock(Mono.class);
         TracingState tracingStateMock = mock(TracingState.class);
-        
+
         // when
         WingtipsExchangeFilterFunctionTracingCompletionMonoWrapper impl =
             new WingtipsExchangeFilterFunctionTracingCompletionMonoWrapper(
@@ -955,7 +976,7 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
             .isInstanceOf(WingtipsExchangeFilterFunctionTracingCompletionSubscriber.class);
         WingtipsExchangeFilterFunctionTracingCompletionSubscriber subscriberWrapper =
             (WingtipsExchangeFilterFunctionTracingCompletionSubscriber) subscriberCaptor.getValue();
-        
+
         assertThat(subscriberWrapper.actual).isSameAs(actualSubscriberMock);
         assertThat(subscriberWrapper.request).isSameAs(request);
         assertThat(subscriberWrapper.subscriberContext).isSameAs(actualSubscriberContextMock);
@@ -971,7 +992,7 @@ public class WingtipsSpringWebfluxExchangeFilterFunctionTest {
     }
 
     // ========== Tests for WingtipsExchangeFilterFunctionTracingCompletionSubscriber inner class ============
-    
+
     @Test
     public void WingtipsExchangeFilterFunctionTracingCompletionSubscriber_constructor_sets_fields_as_expected() {
         // given

@@ -15,11 +15,10 @@ dependencies {
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testImplementation(
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "org.eclipse.jetty:jetty-webapp:$jettyVersion",

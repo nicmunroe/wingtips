@@ -19,10 +19,9 @@ dependencies {
     )
     testImplementation(
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
     )
 }

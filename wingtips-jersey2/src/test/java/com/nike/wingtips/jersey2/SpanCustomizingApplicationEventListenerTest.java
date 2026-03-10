@@ -2,23 +2,23 @@ package com.nike.wingtips.jersey2;
 
 import com.nike.wingtips.tags.KnownZipkinTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ExtendedUriInfo;
 import org.glassfish.jersey.server.monitoring.ApplicationEvent;
 import org.glassfish.jersey.server.monitoring.RequestEvent;
 import org.glassfish.jersey.server.monitoring.RequestEventListener;
 import org.glassfish.jersey.uri.UriTemplate;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class SpanCustomizingApplicationEventListenerTest {
 
     private SpanCustomizingApplicationEventListener implSpy;
@@ -42,7 +41,7 @@ public class SpanCustomizingApplicationEventListenerTest {
     private ContainerRequest requestMock;
     private ExtendedUriInfo extendedUriInfoMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(SpanCustomizingApplicationEventListener.create());
         requestEventMock = mock(RequestEvent.class);
@@ -141,23 +140,27 @@ public class SpanCustomizingApplicationEventListenerTest {
         doReturn(templates).when(uriInfoMock).getMatchedTemplates();
     }
 
-    @DataProvider(value = {
-        "/                  |   /foo/bar/{id}                   |   /foo/bar/{id}",
-        "/                  |   /foo/bar/{id},/                 |   /foo/bar/{id}",
-        "/                  |   /foo/{restOfPath:.+}            |   /foo/{restOfPath:.+}",
-        "/                  |   /foo/{restOfPath:.+},/          |   /foo/{restOfPath:.+}",
-        "/                  |   /last/path/{id},/start/path     |   /start/path/last/path/{id}",
-        "/                  |   /last/path/{id},/start/path,/   |   /start/path/last/path/{id}",
-        "/                  |   /                               |   ",
-        "/                  |   /,/                             |   ",
-        "/                  |   null                            |   ",
-        "notSlashBasePath   |   /foo/bar/{id},/                 |   notSlashBasePath/foo/bar/{id}",
-        "notSlashBasePath   |   /foo/{restOfPath:.+},/          |   notSlashBasePath/foo/{restOfPath:.+}",
-        "notSlashBasePath   |   /last/path/{id},/start/path,/   |   notSlashBasePath/start/path/last/path/{id}",
-        "notSlashBasePath   |   /                               |   notSlashBasePath",
-        "notSlashBasePath   |   null                            |   "
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> route_method_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("/", "/foo/bar/{id}", "/foo/bar/{id}"),
+            Arguments.of("/", "/foo/bar/{id},/", "/foo/bar/{id}"),
+            Arguments.of("/", "/foo/{restOfPath:.+}", "/foo/{restOfPath:.+}"),
+            Arguments.of("/", "/foo/{restOfPath:.+},/", "/foo/{restOfPath:.+}"),
+            Arguments.of("/", "/last/path/{id},/start/path", "/start/path/last/path/{id}"),
+            Arguments.of("/", "/last/path/{id},/start/path,/", "/start/path/last/path/{id}"),
+            Arguments.of("/", "/", ""),
+            Arguments.of("/", "/,/", ""),
+            Arguments.of("/", null, ""),
+            Arguments.of("notSlashBasePath", "/foo/bar/{id},/", "notSlashBasePath/foo/bar/{id}"),
+            Arguments.of("notSlashBasePath", "/foo/{restOfPath:.+},/", "notSlashBasePath/foo/{restOfPath:.+}"),
+            Arguments.of("notSlashBasePath", "/last/path/{id},/start/path,/", "notSlashBasePath/start/path/last/path/{id}"),
+            Arguments.of("notSlashBasePath", "/", "notSlashBasePath"),
+            Arguments.of("notSlashBasePath", null, "")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("route_method_works_as_expected_DataProvider")
     public void route_method_works_as_expected(
         String basePath, String commaDelmitedTemplates, String expectedResult
     ) {

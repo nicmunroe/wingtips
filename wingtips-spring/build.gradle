@@ -15,10 +15,9 @@ dependencies {
     )
     testImplementation(
             project(":wingtips-servlet-api"),
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.springframework:spring-web:$spring4Version",

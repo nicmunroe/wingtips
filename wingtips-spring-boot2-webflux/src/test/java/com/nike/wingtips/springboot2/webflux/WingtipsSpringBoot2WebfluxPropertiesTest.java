@@ -2,46 +2,49 @@ package com.nike.wingtips.springboot2.webflux;
 
 import com.nike.wingtips.Tracer.SpanLoggingRepresentation;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsSpringBoot2WebfluxProperties}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringBoot2WebfluxPropertiesTest {
 
     private WingtipsSpringBoot2WebfluxProperties props;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         props = new WingtipsSpringBoot2WebfluxProperties();
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "TRUE   |   true",
-        "tRuE   |   true",
-        "false  |   false",
-        "FALSE  |   false",
-        "fAlSe  |   false",
-        "       |   false",
-        "junk   |   false",
-        "null   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> wingtipsDisabled_getter_and_setter_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("true", true),
+            Arguments.of("TRUE", true),
+            Arguments.of("tRuE", true),
+            Arguments.of("false", false),
+            Arguments.of("FALSE", false),
+            Arguments.of("fAlSe", false),
+            Arguments.of("", false),
+            Arguments.of("junk", false),
+            Arguments.of(null, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("wingtipsDisabled_getter_and_setter_works_as_expected_DataProvider")
     public void wingtipsDisabled_getter_and_setter_works_as_expected(
         String propValueAsStringForSetter, boolean expectedGetterResult
     ) {
@@ -74,7 +77,7 @@ public class WingtipsSpringBoot2WebfluxPropertiesTest {
             props.setSpanLoggingFormat(null);
             assertThat(props.getSpanLoggingFormat()).isNull();
         }
-        
+
         // serverSideSpanTaggingStrategy getter/setter
         {
             String strategyValue = UUID.randomUUID().toString();

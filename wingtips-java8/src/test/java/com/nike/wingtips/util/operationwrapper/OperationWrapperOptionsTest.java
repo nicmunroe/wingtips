@@ -6,12 +6,7 @@ import com.nike.wingtips.util.operationwrapper.OperationWrapperOptions.Builder;
 import com.nike.wingtips.util.spantagger.ErrorSpanTagger;
 import com.nike.wingtips.util.spantagger.SpanTagger;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,20 +17,20 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link OperationWrapperOptions}.
  */
-@RunWith(DataProviderRunner.class)
 public class OperationWrapperOptionsTest {
-
-    @DataProvider
-    public static List<List<SpanPurpose>> spanPurposeDataProvider() {
-        return Stream.of(SpanPurpose.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> spanPurpose_DataProvider() {
+        return Stream.of(SpanPurpose.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("spanPurposeDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("spanPurpose_DataProvider")
     public void constructor_works_as_expected(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -80,8 +75,8 @@ public class OperationWrapperOptionsTest {
         assertThat(options.errorTagger).isNull();
     }
 
-    @UseDataProvider("spanPurposeDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("spanPurpose_DataProvider")
     public void newBuilder_works_as_expected(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -97,8 +92,8 @@ public class OperationWrapperOptionsTest {
         assertThat(builder.errorTagger).isEqualTo(ErrorSpanTagger.DEFAULT_IMPL);
     }
 
-    @UseDataProvider("spanPurposeDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("spanPurpose_DataProvider")
     public void builder_constructor_works_as_expected(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -125,14 +120,12 @@ public class OperationWrapperOptionsTest {
             this.strValue = strValue;
         }
     }
-
-    @DataProvider
-    public static List<List<BlankStringScenario>> blankStringScenarioDataProvider() {
-        return Stream.of(BlankStringScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> blankStringScenario_DataProvider() {
+        return Stream.of(BlankStringScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("blankStringScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("blankStringScenario_DataProvider")
     public void builder_constructor_throws_IllegalArgumentException_if_passed_blank_span_name(
         BlankStringScenario scenario
     ) {
@@ -156,11 +149,15 @@ public class OperationWrapperOptionsTest {
             .hasMessage("spanPurpose cannot be null");
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> builder_withParentTracingState_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("builder_withParentTracingState_works_as_expected_DataProvider")
     public void builder_withParentTracingState_works_as_expected(boolean valueIsNull) {
         // given
         Builder<?> builder = new Builder<>(UUID.randomUUID().toString(), SpanPurpose.LOCAL_ONLY);
@@ -174,11 +171,15 @@ public class OperationWrapperOptionsTest {
         assertThat(result).isSameAs(builder);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> builder_withSpanTagger_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("builder_withSpanTagger_works_as_expected_DataProvider")
     public void builder_withSpanTagger_works_as_expected(boolean valueIsNull) {
         // given
         Builder<Object> builder = new Builder<>(UUID.randomUUID().toString(), SpanPurpose.LOCAL_ONLY);
@@ -192,11 +193,15 @@ public class OperationWrapperOptionsTest {
         assertThat(result).isSameAs(builder);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> builder_withErrorTagger_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("builder_withErrorTagger_works_as_expected_DataProvider")
     public void builder_withErrorTagger_works_as_expected(boolean valueIsNull) {
         // given
         Builder<Object> builder = new Builder<>(UUID.randomUUID().toString(), SpanPurpose.LOCAL_ONLY);
@@ -210,8 +215,8 @@ public class OperationWrapperOptionsTest {
         assertThat(result).isSameAs(builder);
     }
 
-    @UseDataProvider("spanPurposeDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("spanPurpose_DataProvider")
     public void builder_build_method_works_as_expected(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();

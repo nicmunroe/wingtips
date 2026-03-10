@@ -1,8 +1,5 @@
 package com.nike.wingtips.apache.httpclient.tag;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -10,9 +7,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.RequestLine;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpRequestWrapper;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -26,13 +22,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ApacheHttpClientTagAdapter}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ApacheHttpClientTagAdapterTest {
 
     private ApacheHttpClientTagAdapter implSpy;
@@ -40,7 +39,7 @@ public class ApacheHttpClientTagAdapterTest {
     private HttpResponse responseMock;
     private RequestLine requestLineMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new ApacheHttpClientTagAdapter());
         requestMock = mock(HttpRequest.class);
@@ -58,17 +57,21 @@ public class ApacheHttpClientTagAdapterTest {
             .isSameAs(ApacheHttpClientTagAdapter.DEFAULT_INSTANCE);
     }
 
-    @DataProvider(value = {
-        "http://foo.bar/some/path                       |   /some/path",
-        "http://foo.bar/some/path?thing=stuff           |   /some/path",
-        "/some/path                                     |   /some/path",
-        "/some/path?thing=stuff                         |   /some/path",
-        "http://foo.bar/                                |   /",
-        "http://foo.bar/?thing=stuff                    |   /",
-        "/                                              |   /",
-        "/?thing=stuff                                  |   /",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestPath_works_as_expected_for_a_request_that_is_an_HttpRequestWrapper_DataProvider() {
+        return Stream.of(
+            Arguments.of("http://foo.bar/some/path", "/some/path"),
+            Arguments.of("http://foo.bar/some/path?thing=stuff", "/some/path"),
+            Arguments.of("/some/path", "/some/path"),
+            Arguments.of("/some/path?thing=stuff", "/some/path"),
+            Arguments.of("http://foo.bar/", "/"),
+            Arguments.of("http://foo.bar/?thing=stuff", "/"),
+            Arguments.of("/", "/"),
+            Arguments.of("/?thing=stuff", "/")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestPath_works_as_expected_for_a_request_that_is_an_HttpRequestWrapper_DataProvider")
     public void getRequestPath_works_as_expected_for_a_request_that_is_an_HttpRequestWrapper(
         String uriString, String expectedResult
     ) {
@@ -83,54 +86,41 @@ public class ApacheHttpClientTagAdapterTest {
         assertThat(result).isEqualTo(expectedResult);
     }
 
-    @DataProvider(value = {
-        // Basic HTTP URIs
-        "http://foo.bar/some/path                       |   /some/path",
-        "http://foo.bar/                                |   /",
+    public static Stream<Arguments> getRequestPath_works_as_expected_for_a_request_that_is_not_an_HttpRequestWrapper_DataProvider() {
+        return Stream.of(
+            Arguments.of("http://foo.bar/some/path", "/some/path"),
+            Arguments.of("http://foo.bar/", "/"),
+            Arguments.of("http://foo.bar:4242/some/path", "/some/path"),
+            Arguments.of("http://foo.bar:4242/", "/"),
+            Arguments.of("https://foo.bar/some/path", "/some/path"),
+            Arguments.of("https://foo.bar/", "/"),
+            Arguments.of("https://foo.bar:4242/some/path", "/some/path"),
+            Arguments.of("https://foo.bar:4242/", "/"),
+            Arguments.of("http://foo.bar/some/path?thing=stuff", "/some/path"),
+            Arguments.of("http://foo.bar/?thing=stuff", "/"),
+            Arguments.of("http://foo.bar:4242/some/path?thing=stuff", "/some/path"),
+            Arguments.of("http://foo.bar:4242/?thing=stuff", "/"),
+            Arguments.of("https://foo.bar/some/path?thing=stuff", "/some/path"),
+            Arguments.of("https://foo.bar/?thing=stuff", "/"),
+            Arguments.of("https://foo.bar:4242/some/path?thing=stuff", "/some/path"),
+            Arguments.of("https://foo.bar:4242/?thing=stuff", "/"),
+            Arguments.of("http://no.real.path", "/"),
+            Arguments.of("https://no.real.path", "/"),
+            Arguments.of("http://no.real.path?thing=stuff", "/"),
+            Arguments.of("https://no.real.path?thing=stuff", "/"),
+            Arguments.of("/some/path", "/some/path"),
+            Arguments.of("/some/path?thing=stuff", "/some/path"),
+            Arguments.of("/", "/"),
+            Arguments.of("/?thing=stuff", "/"),
+            Arguments.of("nothttp://foo.bar/some/path", null),
+            Arguments.of("missing/leading/slash", null),
+            Arguments.of("http//missing.scheme.colon/some/path", null),
+            Arguments.of("http:/missing.scheme.double.slash/some/path", null)
+        );
+    }
 
-        "http://foo.bar:4242/some/path                  |   /some/path",
-        "http://foo.bar:4242/                           |   /",
-
-        // Same thing, but for HTTPS
-        "https://foo.bar/some/path                      |   /some/path",
-        "https://foo.bar/                               |   /",
-
-        "https://foo.bar:4242/some/path                 |   /some/path",
-        "https://foo.bar:4242/                          |   /",
-
-        // Basic HTTP URIs with query string
-        "http://foo.bar/some/path?thing=stuff           |   /some/path",
-        "http://foo.bar/?thing=stuff                    |   /",
-
-        "http://foo.bar:4242/some/path?thing=stuff      |   /some/path",
-        "http://foo.bar:4242/?thing=stuff               |   /",
-
-        // Same thing, but for HTTPS (with query string)
-        "https://foo.bar/some/path?thing=stuff          |   /some/path",
-        "https://foo.bar/?thing=stuff                   |   /",
-
-        "https://foo.bar:4242/some/path?thing=stuff     |   /some/path",
-        "https://foo.bar:4242/?thing=stuff              |   /",
-
-        // URIs missing path
-        "http://no.real.path                            |   /",
-        "https://no.real.path                           |   /",
-        "http://no.real.path?thing=stuff                |   /",
-        "https://no.real.path?thing=stuff               |   /",
-
-        // URIs missing scheme and host - just path
-        "/some/path                                     |   /some/path",
-        "/some/path?thing=stuff                         |   /some/path",
-        "/                                              |   /",
-        "/?thing=stuff                                  |   /",
-
-        // Broken URIs
-        "nothttp://foo.bar/some/path                    |   null",
-        "missing/leading/slash                          |   null",
-        "http//missing.scheme.colon/some/path           |   null",
-        "http:/missing.scheme.double.slash/some/path    |   null",
-    }, splitBy = "\\|")
-    @Test
+    @ParameterizedTest
+    @MethodSource("getRequestPath_works_as_expected_for_a_request_that_is_not_an_HttpRequestWrapper_DataProvider")
     public void getRequestPath_works_as_expected_for_a_request_that_is_not_an_HttpRequestWrapper(
         String uri, String expectedPath
     ) {
@@ -161,12 +151,11 @@ public class ApacheHttpClientTagAdapterTest {
         public final HttpResponse responseObjMock;
         public final Integer expectedResult;
 
-
         GetResponseHttpStatusScenario(boolean responseObjIsNull, boolean statusLineIsNull, Integer expectedResult) {
             HttpResponse response = null;
             if (!responseObjIsNull) {
                 response = mock(HttpResponse.class);
-                
+
                 StatusLine statusLine = null;
                 if (!statusLineIsNull) {
                     statusLine = mock(StatusLine.class);
@@ -181,12 +170,16 @@ public class ApacheHttpClientTagAdapterTest {
         }
     }
 
-    @DataProvider(value = {
-        "HAPPY_PATH",
-        "RESPONSE_OBJ_IS_NULL",
-        "STATUS_LINE_IS_NULL"
-    })
-    @Test
+    public static Stream<Arguments> getResponseHttpStatus_gets_status_code_from_given_response_StatusLine_DataProvider() {
+        return Stream.of(
+            Arguments.of(GetResponseHttpStatusScenario.HAPPY_PATH),
+            Arguments.of(GetResponseHttpStatusScenario.RESPONSE_OBJ_IS_NULL),
+            Arguments.of(GetResponseHttpStatusScenario.STATUS_LINE_IS_NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getResponseHttpStatus_gets_status_code_from_given_response_StatusLine_DataProvider")
     public void getResponseHttpStatus_gets_status_code_from_given_response_StatusLine(
         GetResponseHttpStatusScenario scenario
     ) {
@@ -197,14 +190,18 @@ public class ApacheHttpClientTagAdapterTest {
         assertThat(result).isEqualTo(scenario.expectedResult);
     }
 
-    @DataProvider(value = {
-        "false  |   GET",
-        "false  |   POST",
-        "false  |   FOO",
-        "false  |   null",
-        "true   |   null"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestHttpMethod_extracts_result_from_RequestLine_DataProvider() {
+        return Stream.of(
+            Arguments.of(false, "GET"),
+            Arguments.of(false, "POST"),
+            Arguments.of(false, "FOO"),
+            Arguments.of(false, null),
+            Arguments.of(true, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestHttpMethod_extracts_result_from_RequestLine_DataProvider")
     public void getRequestHttpMethod_extracts_result_from_RequestLine(
         boolean requestIsNull, String expectedResult
     ) {
@@ -268,14 +265,18 @@ public class ApacheHttpClientTagAdapterTest {
         }
     }
 
-    @DataProvider(value = {
-        "REQUEST_OBJ_IS_NULL",
-        "REQUEST_OBJ_IS_NOT_WRAPPER",
-        "REQUEST_IS_WRAPPER_BUT_DOES_NOT_START_WITH_SLASH",
-        "REQUEST_IS_WRAPPER_AND_STARTS_WITH_SLASH_BUT_TARGET_IS_NULL",
-        "REQUEST_IS_WRAPPER_AND_STARTS_WITH_SLASH_AND_TARGET_HAS_URI"
-    })
-    @Test
+    public static Stream<Arguments> getRequestUrl_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(GetRequestUrlScenario.REQUEST_OBJ_IS_NULL),
+            Arguments.of(GetRequestUrlScenario.REQUEST_OBJ_IS_NOT_WRAPPER),
+            Arguments.of(GetRequestUrlScenario.REQUEST_IS_WRAPPER_BUT_DOES_NOT_START_WITH_SLASH),
+            Arguments.of(GetRequestUrlScenario.REQUEST_IS_WRAPPER_AND_STARTS_WITH_SLASH_BUT_TARGET_IS_NULL),
+            Arguments.of(GetRequestUrlScenario.REQUEST_IS_WRAPPER_AND_STARTS_WITH_SLASH_AND_TARGET_HAS_URI)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestUrl_works_as_expected_DataProvider")
     public void getRequestUrl_works_as_expected(GetRequestUrlScenario scenario) {
         // when
         String result = implSpy.getRequestUrl(scenario.requestMock);
@@ -359,11 +360,15 @@ public class ApacheHttpClientTagAdapterTest {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getHeaderMultipleValue_returns_null_when_no_matching_headers_found_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getHeaderMultipleValue_returns_null_when_no_matching_headers_found_DataProvider")
     public void getHeaderMultipleValue_returns_null_when_no_matching_headers_found(boolean nullMatchingHeaders) {
         // given
         String headerKey = "headerKey-" + UUID.randomUUID().toString();

@@ -1,11 +1,7 @@
 package com.nike.wingtips.spring.webflux.client;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.reactive.function.client.ClientRequest;
@@ -22,20 +18,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link SpringWebfluxClientRequestTagAdapter}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class SpringWebfluxClientRequestTagAdapterTest {
 
     private SpringWebfluxClientRequestTagAdapter implSpy;
     private ClientRequest requestMock;
     private ClientResponse responseMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new SpringWebfluxClientRequestTagAdapter());
         requestMock = mock(ClientRequest.class);
@@ -77,14 +76,18 @@ public class SpringWebfluxClientRequestTagAdapterTest {
         assertThat(implSpy.getRequestUrl(requestMock)).isNull();
     }
 
-    @DataProvider(value = {
-        "200",
-        "300",
-        "400",
-        "500",
-        "999"
-    })
-    @Test
+    public static Stream<Arguments> getResponseHttpStatus_returns_value_from_response_rawStatusCode_DataProvider() {
+        return Stream.of(
+            Arguments.of(200),
+            Arguments.of(300),
+            Arguments.of(400),
+            Arguments.of(500),
+            Arguments.of(999)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getResponseHttpStatus_returns_value_from_response_rawStatusCode_DataProvider")
     public void getResponseHttpStatus_returns_value_from_response_rawStatusCode(int responseMethodValue) {
         // given
         doReturn(responseMethodValue).when(responseMock).rawStatusCode();
@@ -103,18 +106,22 @@ public class SpringWebfluxClientRequestTagAdapterTest {
         assertThat(implSpy.getResponseHttpStatus(null)).isNull();
     }
 
-    @DataProvider(value = {
-        "GET        |   GET",
-        "HEAD       |   HEAD",
-        "POST       |   POST",
-        "PUT        |   PUT",
-        "PATCH      |   PATCH",
-        "DELETE     |   DELETE",
-        "OPTIONS    |   OPTIONS",
-        "TRACE      |   TRACE",
-        "null       |   null"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestHttpMethod_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(HttpMethod.GET, "GET"),
+            Arguments.of(HttpMethod.HEAD, "HEAD"),
+            Arguments.of(HttpMethod.POST, "POST"),
+            Arguments.of(HttpMethod.PUT, "PUT"),
+            Arguments.of(HttpMethod.PATCH, "PATCH"),
+            Arguments.of(HttpMethod.DELETE, "DELETE"),
+            Arguments.of(HttpMethod.OPTIONS, "OPTIONS"),
+            Arguments.of(HttpMethod.TRACE, "TRACE"),
+            Arguments.of(null, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestHttpMethod_works_as_expected_DataProvider")
     public void getRequestHttpMethod_works_as_expected(HttpMethod httpMethod, String expectedResult) {
         // given
         doReturn(httpMethod).when(requestMock).method();

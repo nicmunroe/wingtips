@@ -10,13 +10,9 @@ import com.nike.wingtips.util.asynchelperwrapper.ExecutorServiceWithTracing;
 import com.nike.wingtips.util.asynchelperwrapper.RunnableWithTracing;
 import com.nike.wingtips.util.asynchelperwrapper.ScheduledExecutorServiceWithTracing;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.Collections;
@@ -36,13 +32,16 @@ import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.scheduledExecutorS
 import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.unlinkTracingFromCurrentThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link AsyncWingtipsHelperJava7}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 @SuppressWarnings("deprecation")
 public class AsyncWingtipsHelperJava7Test {
     private Runnable runnableMock;
@@ -50,7 +49,7 @@ public class AsyncWingtipsHelperJava7Test {
     private ExecutorService executorServiceMock;
     private ScheduledExecutorService scheduledExecutorServiceMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         runnableMock = mock(Runnable.class);
         callableMock = mock(Callable.class);
@@ -60,7 +59,7 @@ public class AsyncWingtipsHelperJava7Test {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -230,11 +229,15 @@ public class AsyncWingtipsHelperJava7Test {
         assertThat(Whitebox.getInternalState(result, "delegate")).isSameAs(scheduledExecutorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> linkTracingToCurrentThread_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("linkTracingToCurrentThread_pair_works_as_expected_DataProvider")
     public void linkTracingToCurrentThread_pair_works_as_expected(boolean useNullPair) {
         // given
         Pair<Deque<Span>, Map<String, String>> infoForLinking = (useNullPair) ? null
@@ -289,13 +292,17 @@ public class AsyncWingtipsHelperJava7Test {
         assertThat(postCallInfo.getRight()).isNullOrEmpty();
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "false  |   true",
-        "true   |   false",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> linkTracingToCurrentThread_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("linkTracingToCurrentThread_separate_args_works_as_expected_DataProvider")
     public void linkTracingToCurrentThread_separate_args_works_as_expected(boolean useNullSpanStack,
                                                                                  boolean useNullMdcInfo) {
         // given
@@ -352,11 +359,15 @@ public class AsyncWingtipsHelperJava7Test {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unlinkTracingFromCurrentThread_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unlinkTracingFromCurrentThread_pair_works_as_expected_DataProvider")
     public void unlinkTracingFromCurrentThread_pair_works_as_expected(boolean useNullPair) {
         // given
         Pair<Deque<Span>, Map<String, String>> infoForLinking = (useNullPair) ? null
@@ -405,13 +416,17 @@ public class AsyncWingtipsHelperJava7Test {
         assertThat(postCallInfo.getRight()).isNullOrEmpty();
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "false  |   true",
-        "true   |   false",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unlinkTracingFromCurrentThread_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unlinkTracingFromCurrentThread_separate_args_works_as_expected_DataProvider")
     public void unlinkTracingFromCurrentThread_separate_args_works_as_expected(boolean useNullSpanStack,
                                                                                      boolean useNullMdcInfo) {
         // given
@@ -446,7 +461,7 @@ public class AsyncWingtipsHelperJava7Test {
 
         // when
         unlinkTracingFromCurrentThread(spanStackForLinking, mdcInfoForLinking);
-        
+
         Pair<Deque<Span>, Map<String, String>> postCallInfo = Pair.of(
             Tracer.getInstance().getCurrentSpanStackCopy(),
             MDC.getCopyOfContextMap()

@@ -1,7 +1,7 @@
 package com.nike.wingtips.spring.webflux.server;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.server.ServerWebExchange;
@@ -28,7 +28,7 @@ public class RequestWithHeadersServerWebExchangeAdapterTest {
     private ServerHttpRequest requestMock;
     private HttpHeaders headersMock;
 
-    @Before
+    @BeforeEach
     public void setupMethod() {
         exchangeMock = mock(ServerWebExchange.class);
         requestMock = mock(ServerHttpRequest.class);

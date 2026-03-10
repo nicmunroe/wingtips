@@ -6,12 +6,8 @@ import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.TraceHeaders;
 import com.nike.wingtips.tags.KnownZipkinTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Constructor;
@@ -25,11 +21,14 @@ import javax.servlet.http.HttpServletRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link HttpSpanFactory}.
  */
-@RunWith(DataProviderRunner.class)
 public class HttpSpanFactoryTest {
 
     private String sampleTraceID = TraceAndSpanIdGenerator.generateId();
@@ -44,7 +43,7 @@ public class HttpSpanFactoryTest {
     private static final String ALT_USER_ID_HEADER_KEY = "altUserIdHeader";
     private static final List<String> USER_ID_HEADER_KEYS = Arrays.asList(USER_ID_HEADER_KEY, ALT_USER_ID_HEADER_KEY);
 
-    @Before
+    @BeforeEach
     public void onSetup() {
         request = Mockito.mock(HttpServletRequest.class);
     }
@@ -221,7 +220,6 @@ public class HttpSpanFactoryTest {
         assertThat(newSpan.isSampleable()).isFalse();
     }
 
-
     @Test
     public void fromHttpServletRequest_generates_new_spanId_if_missing_from_headers() {
         // given: a request with a trace ID but no span ID in the headers
@@ -242,25 +240,23 @@ public class HttpSpanFactoryTest {
         assertThat(firstSpan.getSpanId()).isNotEqualTo(secondSpan.getSpanId());
     }
 
-    @DataProvider(value = {
-        // http.route takes precedence
-        "/some/http/route   |   /some/spring/pattern    |   /some/http/route",
+    public static Stream<Arguments> determineUriPathTemplate_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("/some/http/route", "/some/spring/pattern", "/some/http/route"),
+            Arguments.of("/some/http/route", null, "/some/http/route"),
+            Arguments.of("/some/http/route", "", "/some/http/route"),
+            Arguments.of("/some/http/route", "[whitespace]", "/some/http/route"),
+            Arguments.of(null, "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of("", "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of("[whitespace]", "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of(null, null, null),
+            Arguments.of("", "", null),
+            Arguments.of("[whitespace]", "[whitespace]", null)
+        );
+    }
 
-        "/some/http/route   |   null                    |   /some/http/route",
-        "/some/http/route   |                           |   /some/http/route",
-        "/some/http/route   |   [whitespace]            |   /some/http/route",
-
-        // Spring matching pattern request attr is used if http.route is null/blank
-        "null               |   /some/spring/pattern    |   /some/spring/pattern",
-        "                   |   /some/spring/pattern    |   /some/spring/pattern",
-        "[whitespace]       |   /some/spring/pattern    |   /some/spring/pattern",
-
-        // null returned if both request attrs are null/blank
-        "null               |   null                    |   null",
-        "                   |                           |   null",
-        "[whitespace]       |   [whitespace]            |   null",
-    }, splitBy = "\\|")
-    @Test
+    @ParameterizedTest
+    @MethodSource("determineUriPathTemplate_works_as_expected_DataProvider")
     public void determineUriPathTemplate_works_as_expected(
         String httpRouteRequestAttr,
         String springMatchingPatternRequestAttr,
@@ -292,29 +288,33 @@ public class HttpSpanFactoryTest {
         assertThat(HttpSpanFactory.determineUriPathTemplate(null)).isNull();
     }
 
-    @DataProvider(value = {
-        "GET            |   /some/http/route    |   /some/spring/pattern    |   GET /some/http/route",
-        "GET            |   /some/http/route    |   null                    |   GET /some/http/route",
-        "GET            |   /some/http/route    |                           |   GET /some/http/route",
-        "GET            |   /some/http/route    |   [whitespace]            |   GET /some/http/route",
-        "GET            |   null                |   /some/spring/pattern    |   GET /some/spring/pattern",
-        "GET            |                       |   /some/spring/pattern    |   GET /some/spring/pattern",
-        "GET            |   [whitespace]        |   /some/spring/pattern    |   GET /some/spring/pattern",
-        "GET            |   null                |   null                    |   GET",
-        "GET            |                       |                           |   GET",
-        "GET            |   [whitespace]        |   [whitespace]            |   GET",
-        "null           |   /some/http/route    |   null                    |   UNKNOWN_HTTP_METHOD /some/http/route",
-        "               |   /some/http/route    |   null                    |   UNKNOWN_HTTP_METHOD /some/http/route",
-        "[whitespace]   |   /some/http/route    |   null                    |   UNKNOWN_HTTP_METHOD /some/http/route",
-        "null           |   null                |   /some/spring/pattern    |   UNKNOWN_HTTP_METHOD /some/spring/pattern",
-        "               |   null                |   /some/spring/pattern    |   UNKNOWN_HTTP_METHOD /some/spring/pattern",
-        "[whitespace]   |   null                |   /some/spring/pattern    |   UNKNOWN_HTTP_METHOD /some/spring/pattern",
-        "null           |   /some/http/route    |   /some/spring/pattern    |   UNKNOWN_HTTP_METHOD /some/http/route",
-        "null           |   null                |   null                    |   UNKNOWN_HTTP_METHOD",
-        "               |                       |                           |   UNKNOWN_HTTP_METHOD",
-        "[whitespace]   |   [whitespace]        |   [whitespace]            |   UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("GET", "/some/http/route", "/some/spring/pattern", "GET /some/http/route"),
+            Arguments.of("GET", "/some/http/route", null, "GET /some/http/route"),
+            Arguments.of("GET", "/some/http/route", "", "GET /some/http/route"),
+            Arguments.of("GET", "/some/http/route", "[whitespace]", "GET /some/http/route"),
+            Arguments.of("GET", null, "/some/spring/pattern", "GET /some/spring/pattern"),
+            Arguments.of("GET", "", "/some/spring/pattern", "GET /some/spring/pattern"),
+            Arguments.of("GET", "[whitespace]", "/some/spring/pattern", "GET /some/spring/pattern"),
+            Arguments.of("GET", null, null, "GET"),
+            Arguments.of("GET", "", "", "GET"),
+            Arguments.of("GET", "[whitespace]", "[whitespace]", "GET"),
+            Arguments.of(null, "/some/http/route", null, "UNKNOWN_HTTP_METHOD /some/http/route"),
+            Arguments.of("", "/some/http/route", null, "UNKNOWN_HTTP_METHOD /some/http/route"),
+            Arguments.of("[whitespace]", "/some/http/route", null, "UNKNOWN_HTTP_METHOD /some/http/route"),
+            Arguments.of(null, null, "/some/spring/pattern", "UNKNOWN_HTTP_METHOD /some/spring/pattern"),
+            Arguments.of("", null, "/some/spring/pattern", "UNKNOWN_HTTP_METHOD /some/spring/pattern"),
+            Arguments.of("[whitespace]", null, "/some/spring/pattern", "UNKNOWN_HTTP_METHOD /some/spring/pattern"),
+            Arguments.of(null, "/some/http/route", "/some/spring/pattern", "UNKNOWN_HTTP_METHOD /some/http/route"),
+            Arguments.of(null, null, null, "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("", "", "", "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("[whitespace]", "[whitespace]", "[whitespace]", "UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSpanName_works_as_expected_DataProvider")
     public void getSpanName_works_as_expected(
         String httpMethod,
         String httpRouteRequestAttr,

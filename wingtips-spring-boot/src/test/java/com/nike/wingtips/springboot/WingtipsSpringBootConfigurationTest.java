@@ -8,11 +8,7 @@ import com.nike.wingtips.springboot.componenttest.componentscanonly.ComponentTes
 import com.nike.wingtips.springboot.componenttest.manualimportandcomponentscan.ComponentTestMainWithBothManualImportAndComponentScan;
 import com.nike.wingtips.springboot.componenttest.manualimportonly.ComponentTestMainManualImportOnly;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -38,13 +34,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsSpringBootConfiguration}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringBootConfigurationTest {
 
     private WingtipsSpringBootProperties generateProps(
@@ -63,12 +62,16 @@ public class WingtipsSpringBootConfigurationTest {
         return props;
     }
 
-    @DataProvider(value = {
-        "JSON",
-        "KEY_VALUE",
-        "null"
-    })
-    @Test
+    public static Stream<Arguments> constructor_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanLoggingRepresentation.JSON),
+            Arguments.of(SpanLoggingRepresentation.KEY_VALUE),
+            Arguments.of((Object) null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_works_as_expected_DataProvider")
     public void constructor_works_as_expected(SpanLoggingRepresentation spanLoggingFormat) {
         // given
         WingtipsSpringBootProperties props = generateProps(
@@ -116,17 +119,21 @@ public class WingtipsSpringBootConfigurationTest {
         }
     }
 
-    @DataProvider(value = {
-        "true   |   USER_ID_HEADER_KEYS_PROP_IS_SET",
-        "true   |   TAG_AND_NAMING_STRATEGY_PROP_IS_SET",
-        "true   |   TAG_AND_NAMING_ADAPTER_PROP_IS_SET",
-        "true   |   ALL_PROPS_ARE_SET",
-        "false  |   USER_ID_HEADER_KEYS_PROP_IS_SET",
-        "false  |   TAG_AND_NAMING_STRATEGY_PROP_IS_SET",
-        "false  |   TAG_AND_NAMING_ADAPTER_PROP_IS_SET",
-        "false  |   ALL_PROPS_ARE_SET"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> wingtipsRequestTracingFilter_returns_FilterRegistrationBean_with_expected_values_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, PropertiesScenario.USER_ID_HEADER_KEYS_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.TAG_AND_NAMING_STRATEGY_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.TAG_AND_NAMING_ADAPTER_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.ALL_PROPS_ARE_SET),
+            Arguments.of(false, PropertiesScenario.USER_ID_HEADER_KEYS_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.TAG_AND_NAMING_STRATEGY_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.TAG_AND_NAMING_ADAPTER_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.ALL_PROPS_ARE_SET)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("wingtipsRequestTracingFilter_returns_FilterRegistrationBean_with_expected_values_DataProvider")
     public void wingtipsRequestTracingFilter_returns_FilterRegistrationBean_with_expected_values(
         boolean appFilterOverrideIsNull, PropertiesScenario scenario
     ) {
@@ -206,7 +213,7 @@ public class WingtipsSpringBootConfigurationTest {
 
         // and when
         dnsf.destroy();
-        
+
         // then
         verifyNoMoreInteractions(requestMock, responseMock, filterChainMock, filterConfigMock);
     }
@@ -242,12 +249,17 @@ public class WingtipsSpringBootConfigurationTest {
     //      and WingtipsSpringBootProperties when it is component scanned, imported manually, or both. Specifically
     //      we should not get multiple bean definition errors even when WingtipsSpringBootConfiguration is *both*
     //      component scanned *and* imported manually.
-    @DataProvider(value = {
-        "MANUAL_IMPORT_ONLY",
-        "COMPONENT_SCAN_ONLY",
-        "BOTH_MANUAL_AND_COMPONENT_SCAN"
-    })
-    @Test
+
+    public static Stream<Arguments> component_test_DataProvider() {
+        return Stream.of(
+            Arguments.of(ComponentTestSetup.MANUAL_IMPORT_ONLY),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_ONLY),
+            Arguments.of(ComponentTestSetup.BOTH_MANUAL_AND_COMPONENT_SCAN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("component_test_DataProvider")
     public void component_test(ComponentTestSetup componentTestSetup) {
         // given
         int serverPort = findFreePort();

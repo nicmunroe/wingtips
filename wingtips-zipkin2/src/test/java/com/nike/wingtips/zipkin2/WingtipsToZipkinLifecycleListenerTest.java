@@ -5,12 +5,8 @@ import com.nike.wingtips.testutil.Whitebox;
 import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverter;
 import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverterDefaultImpl;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
@@ -36,13 +32,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsToZipkinLifecycleListener}
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsToZipkinLifecycleListenerTest {
 
     private WingtipsToZipkinLifecycleListener listener;
@@ -51,7 +50,7 @@ public class WingtipsToZipkinLifecycleListenerTest {
     private Reporter<zipkin2.Span> spanReporterMock;
     private Span spanMock;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
     public void beforeMethod() {
         serviceName = UUID.randomUUID().toString();
@@ -78,11 +77,15 @@ public class WingtipsToZipkinLifecycleListenerTest {
         assertThat(listener.zipkinSpanReporter).isSameAs(spanReporterMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> convenience_constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convenience_constructor_sets_fields_as_expected_DataProvider")
     public void convenience_constructor_sets_fields_as_expected(boolean baseUrlTrailingSlash) throws MalformedURLException {
         // given
         String baseUrlWithoutTrailingSlash = "http://localhost:4242";

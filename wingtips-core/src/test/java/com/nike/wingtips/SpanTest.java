@@ -10,15 +10,12 @@ import com.nike.wingtips.util.parser.SpanParser;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 import org.apache.commons.lang.SerializationUtils;
 import org.assertj.core.data.Offset;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -42,11 +39,15 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link Span}
  */
-@RunWith(DataProviderRunner.class)
 public class SpanTest {
 
     private String traceId = TraceAndSpanIdGenerator.generateId();
@@ -78,12 +79,12 @@ public class SpanTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -177,22 +178,28 @@ public class SpanTest {
         assertThat(span.getTimestampedAnnotations()).isEqualTo(annotations);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void public_constructor_throws_IllegalArgumentException_if_passed_null_trace_id() {
-        // expect
-        new Span(null, parentSpanId, spanId, spanName, true, userId, spanPurpose, 42, null, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            new Span(null, parentSpanId, spanId, spanName, true, userId, spanPurpose, 42, null, null, null, null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void public_constructor_throws_IllegalArgumentException_if_passed_null_span_id() {
-        // expect
-        new Span(traceId, parentSpanId, null, spanName, true, userId, spanPurpose, 42, null, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            new Span(traceId, parentSpanId, null, spanName, true, userId, spanPurpose, 42, null, null, null, null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void public_constructor_throws_IllegalArgumentException_if_passed_null_span_name() {
-        // expect
-        new Span(traceId, parentSpanId, spanId, null, true, userId, spanPurpose, 42, null, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            new Span(traceId, parentSpanId, spanId, null, true, userId, spanPurpose, 42, null, null, null, null);
+        });
     }
 
     @Test
@@ -225,7 +232,7 @@ public class SpanTest {
             .isNotNull()
             .isEmpty();
     }
-    
+
     @Test
     public void public_constructor_calculates_start_time_nanos_if_passed_null() {
         // given
@@ -296,13 +303,17 @@ public class SpanTest {
         assertThat(ex).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> generateRootSpanForNewTrace_generates_root_span_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateRootSpanForNewTrace_generates_root_span_as_expected_DataProvider")
     public void generateRootSpanForNewTrace_generates_root_span_as_expected(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -330,17 +341,21 @@ public class SpanTest {
         assertThat(result.getTimestampedAnnotations()).isEmpty();
     }
 
-    @DataProvider(value = {
-        "SERVER     |   true",
-        "SERVER     |   false",
-        "CLIENT     |   true",
-        "CLIENT     |   false",
-        "LOCAL_ONLY |   true",
-        "LOCAL_ONLY |   false",
-        "UNKNOWN    |   true",
-        "UNKNOWN    |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> generateChildSpan_works_as_expected_for_incomplete_parent_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER, true),
+            Arguments.of(SpanPurpose.SERVER, false),
+            Arguments.of(SpanPurpose.CLIENT, true),
+            Arguments.of(SpanPurpose.CLIENT, false),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, true),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, false),
+            Arguments.of(SpanPurpose.UNKNOWN, true),
+            Arguments.of(SpanPurpose.UNKNOWN, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateChildSpan_works_as_expected_for_incomplete_parent_span_DataProvider")
     public void generateChildSpan_works_as_expected_for_incomplete_parent_span(
         SpanPurpose childSpanPurpose, boolean parentHasInvalidSpanIdDueToCallerNotSendingOne
     ) {
@@ -407,17 +422,21 @@ public class SpanTest {
         assertThat(indicatorTagValue).isEqualTo(expectedIndicatorTagValue);
     }
 
-    @DataProvider(value = {
-        "SERVER     |   true",
-        "SERVER     |   false",
-        "CLIENT     |   true",
-        "CLIENT     |   false",
-        "LOCAL_ONLY |   true",
-        "LOCAL_ONLY |   false",
-        "UNKNOWN    |   true",
-        "UNKNOWN    |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> generateChildSpan_works_as_expected_for_completed_parent_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER, true),
+            Arguments.of(SpanPurpose.SERVER, false),
+            Arguments.of(SpanPurpose.CLIENT, true),
+            Arguments.of(SpanPurpose.CLIENT, false),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, true),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, false),
+            Arguments.of(SpanPurpose.UNKNOWN, true),
+            Arguments.of(SpanPurpose.UNKNOWN, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateChildSpan_works_as_expected_for_completed_parent_span_DataProvider")
     public void generateChildSpan_works_as_expected_for_completed_parent_span(
         SpanPurpose childSpanPurpose, boolean parentHasInvalidSpanIdDueToCallerNotSendingOne
     ) {
@@ -461,7 +480,7 @@ public class SpanTest {
         long expectedMaxChildStartEpochMicros =
             parentSpan.getSpanStartTimeEpochMicros() + TimeUnit.NANOSECONDS.toMicros(afterCallNanos - parentSpan.getSpanStartTimeNanos());
         assertThat(childSpan.getSpanStartTimeEpochMicros()).isBetween(expectedMinChildStartEpochMicros, expectedMaxChildStartEpochMicros);
-        
+
         assertThat(childSpan.getSpanStartTimeNanos()).isBetween(beforeCallNanos, afterCallNanos);
         assertThat(childSpan.isCompleted()).isFalse();
         assertThat(childSpan.getDurationNanos()).isNull();
@@ -522,8 +541,6 @@ public class SpanTest {
         // then: it has the same value as toJSON()
         assertThat(toStringVal).isEqualTo(span.toJSON());
     }
-
-    
 
     @Test
     public void getDuration_should_be_null_until_span_is_completed() {
@@ -725,13 +742,17 @@ public class SpanTest {
         assertThat(fullSpan1.hashCode()).isNotEqualTo(fullSpan2.hashCode());
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> newBuilder_with_spanName_and_spanPurpose_args_returns_root_span_builder_by_default_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("newBuilder_with_spanName_and_spanPurpose_args_returns_root_span_builder_by_default_DataProvider")
     public void newBuilder_with_spanName_and_spanPurpose_args_returns_root_span_builder_by_default(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -759,13 +780,17 @@ public class SpanTest {
         assertThat(result.getTimestampedAnnotations()).isEmpty();
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> newBuilder_with_copy_arg_returns_exact_copy_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("newBuilder_with_copy_arg_returns_exact_copy_DataProvider")
     public void newBuilder_with_copy_arg_returns_exact_copy(SpanPurpose spanPurpose) {
         // given
         Span origSpan = createFilledOutSpan(true);
@@ -814,7 +839,7 @@ public class SpanTest {
                 .withTimestampedAnnotations(annotations)
                 .withTimestampedAnnotation(extraAnnotation)
                 .withTimestampedAnnotations(evenMoreAnnotations);
-        
+
         assertThat(spanPurpose).isNotEqualTo(SpanPurpose.UNKNOWN);
 
         Map<String, String> expectedTags = MapBuilder.<String, String>builder()
@@ -851,7 +876,7 @@ public class SpanTest {
         Span.Builder builder = Span.newBuilder("foo", SpanPurpose.UNKNOWN);
         Map<String, String> tagsMapSpy = spy(new LinkedHashMap<>());
         Whitebox.setInternalState(builder, "tags", tagsMapSpy);
-        
+
         // when
         Span.Builder resultingBuilder = builder.withTags(null);
 
@@ -940,11 +965,15 @@ public class SpanTest {
         assertThat(Tracer.getInstance().getCurrentSpan()).isSameAs(parentSpan);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> span_is_autocloseable_using_try_with_resources_block_overall_request_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("span_is_autocloseable_using_try_with_resources_block_overall_request_span_DataProvider")
     public void span_is_autocloseable_using_try_with_resources_block_overall_request_span(
         boolean throwExceptionInTryBlock
     ) {
@@ -975,11 +1004,15 @@ public class SpanTest {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> span_is_autocloseable_using_try_with_resources_block_subspan_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("span_is_autocloseable_using_try_with_resources_block_subspan_DataProvider")
     public void span_is_autocloseable_using_try_with_resources_block_subspan(
         boolean throwExceptionInTryBlock
     ) {
@@ -1032,12 +1065,16 @@ public class SpanTest {
         assertThat(Tracer.getInstance().getCurrentSpanStackCopy()).isEqualTo(singletonList(rootSpan));
     }
 
-    @DataProvider(value = {
-        "0",
-        "1",
-        "2"
-    })
-    @Test
+    public static Stream<Arguments> close_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack_DataProvider() {
+        return Stream.of(
+            Arguments.of(0),
+            Arguments.of(1),
+            Arguments.of(2)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("close_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack_DataProvider")
     public void close_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack(
         int numValidSpansOnStack
     ) {
@@ -1141,7 +1178,6 @@ public class SpanTest {
 
             // then
             assertThat(tmss).isEqualTo(TracerManagedSpanStatus.MANAGED_CURRENT_SUB_SPAN);
-
         }
     }
 
@@ -1175,11 +1211,15 @@ public class SpanTest {
         assertThat(tmssCompleted).isEqualTo(TracerManagedSpanStatus.UNMANAGED_SPAN);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> toJson_matches_SpanParser_convertSpanToJSON_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("toJson_matches_SpanParser_convertSpanToJSON_DataProvider")
     public void toJson_matches_SpanParser_convertSpanToJSON(boolean completed) {
         // given
         Span span = createFilledOutSpan(completed);
@@ -1192,11 +1232,15 @@ public class SpanTest {
         assertThat(jsonFromSpan).isEqualTo(jsonFromSpanParser);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> toKeyValueString_matches_SpanParser_convertSpanToKeyValueFormat_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("toKeyValueString_matches_SpanParser_convertSpanToKeyValueFormat_DataProvider")
     public void toKeyValueString_matches_SpanParser_convertSpanToKeyValueFormat(boolean completed) {
         // given
         Span span = createFilledOutSpan(completed);
@@ -1209,11 +1253,15 @@ public class SpanTest {
         assertThat(keyValueStrFromSpan).isEqualTo(keyValueStrFromSpanParser);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> toString_matches_SpanParser_convertSpanToJSON_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("toString_matches_SpanParser_convertSpanToJSON_DataProvider")
     public void toString_matches_SpanParser_convertSpanToJSON(boolean completed) {
         // given
         Span span = createFilledOutSpan(completed);
@@ -1308,23 +1356,25 @@ public class SpanTest {
         assertThat(ex3).isInstanceOf(UnsupportedOperationException.class);
     }
 
-    @DataProvider(value = {
-        // It's unlikely the test will actually execute fast enough to measure anything under 1 microsecond delay,
-        //      but it can't hurt to try.
-        "0",            // No delay
-        "420",          // 420 nanos
-        "1000",         // 1 micros
-        "42000",        // 42 micros
-        "420000",       // 420 micros
-        "600000",       // 600 micros
-        "1000000",      // 1 millis
-        "4200000"       // 4.2 millis
-    })
-    @Test
+    public static Stream<Arguments> addTimestampedAnnotationForCurrentTime_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(0L),
+            Arguments.of(420L),
+            Arguments.of(1000L),
+            Arguments.of(42000L),
+            Arguments.of(420000L),
+            Arguments.of(600000L),
+            Arguments.of(1000000L),
+            Arguments.of(4200000L)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("addTimestampedAnnotationForCurrentTime_works_as_expected_DataProvider")
     public void addTimestampedAnnotationForCurrentTime_works_as_expected(long delayNanos) {
         // given
         String annotationValue = UUID.randomUUID().toString();
-        
+
         long nanoTimeBeforeSpanCreation = System.nanoTime();
         Span span = Span.newBuilder("foo", SpanPurpose.CLIENT).build();
         long nanoTimeAfterSpanCreation = System.nanoTime();
@@ -1369,7 +1419,7 @@ public class SpanTest {
         // given
         Span span = Span.newBuilder("foo", SpanPurpose.CLIENT).build();
         TimestampedAnnotation annotationMock = mock(TimestampedAnnotation.class);
-        
+
         // when
         span.addTimestampedAnnotation(annotationMock);
 
@@ -1442,14 +1492,18 @@ public class SpanTest {
         }
     }
 
-    @DataProvider(value = {
-        "COMPLETE_SPAN",
-        "SET_SPAN_NAME",
-        "PUT_TAG",
-        "REMOVE_TAG",
-        "ADD_TIMESTAMPED_ANNOTATION"
-    })
-    @Test
+    public static Stream<Arguments> span_state_change_should_reset_cached_serialized_span_representation_strings_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanStateChangeScenario.COMPLETE_SPAN),
+            Arguments.of(SpanStateChangeScenario.SET_SPAN_NAME),
+            Arguments.of(SpanStateChangeScenario.PUT_TAG),
+            Arguments.of(SpanStateChangeScenario.REMOVE_TAG),
+            Arguments.of(SpanStateChangeScenario.ADD_TIMESTAMPED_ANNOTATION)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("span_state_change_should_reset_cached_serialized_span_representation_strings_DataProvider")
     public void span_state_change_should_reset_cached_serialized_span_representation_strings(
         SpanStateChangeScenario scenario
     ) throws IOException {

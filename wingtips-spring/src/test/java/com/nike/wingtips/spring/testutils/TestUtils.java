@@ -86,7 +86,6 @@ public class TestUtils {
             verifyExpectedTracingHeaderValue(actualSpanIdHeaderVal, null);
             verifyExpectedTracingHeaderValue(actualSampledHeaderVal, null);
             verifyExpectedTracingHeaderValue(actualParentSpanIdHeaderVal, null);
-
         }
         else {
             verifyExpectedTracingHeaderValue(actualTraceIdHeaderVal, expectedSpanForHeaders.getTraceId());

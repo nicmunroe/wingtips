@@ -14,11 +14,10 @@ dependencies {
             "commons-codec:commons-codec:$apacheCommonsCodecVersion"
     )
     testImplementation(
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.zipkin.zipkin2:zipkin-junit:$zipkin2Version"
     )
 }

@@ -15,17 +15,12 @@ import com.nike.wingtips.tags.WingtipsTags;
 import com.nike.wingtips.testutils.TestUtils.SpanRecorder;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -98,6 +93,10 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Component test validating Wingtips' integration with Spring WebFlux. This launches a real running server on a
@@ -107,7 +106,6 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringWebfluxComponentTest {
 
     private static final int SERVER_PORT = findFreePort();
@@ -129,19 +127,19 @@ public class WingtipsSpringWebfluxComponentTest {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private static @Nullable Optional<Span> subWebFilterCurrentSpanOnFilterExecute;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         serverAppContext = SpringApplication.run(ComponentTestWebFluxApp.class, "--server.port=" + SERVER_PORT);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         if (serverAppContext != null) {
             SpringApplication.exit(serverAppContext);
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
 
@@ -163,7 +161,7 @@ public class WingtipsSpringWebfluxComponentTest {
         subWebFilterCurrentSpanOnFilterExecute = null;
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -178,17 +176,21 @@ public class WingtipsSpringWebfluxComponentTest {
 
     // ========== VERIFY THE WebFilter (SERVERSIDE FILTER) - WingtipsSpringWebfluxWebFilter =======================
 
-    @DataProvider(value = {
-        "true   |   /basicEndpoint",
-        "false  |   /basicEndpoint",
-        "true   |   /monoEndpoint",
-        "false  |   /monoEndpoint",
-        "true   |   /fluxEndpoint",
-        "false  |   /fluxEndpoint",
-        "true   |   /routerFunctionEndpoint",
-        "false  |   /routerFunctionEndpoint",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_single_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, "/basicEndpoint"),
+            Arguments.of(false, "/basicEndpoint"),
+            Arguments.of(true, "/monoEndpoint"),
+            Arguments.of(false, "/monoEndpoint"),
+            Arguments.of(true, "/fluxEndpoint"),
+            Arguments.of(false, "/fluxEndpoint"),
+            Arguments.of(true, "/routerFunctionEndpoint"),
+            Arguments.of(false, "/routerFunctionEndpoint")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_single_endpoint_traced_correctly_DataProvider")
     public void verify_single_endpoint_traced_correctly(
         boolean upstreamSendsSpan, String endpointPath
     ) {
@@ -232,11 +234,16 @@ public class WingtipsSpringWebfluxComponentTest {
 
     // Verify that span name and http-route-tag come from low-cardinality path template, *not* the high-cardinality
     //      full path.
-    @DataProvider(value = {
-        "true",
-        "false",
-    })
-    @Test
+
+    public static Stream<Arguments> verify_path_param_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_path_param_endpoint_traced_correctly_DataProvider")
     public void verify_path_param_endpoint_traced_correctly(
         boolean upstreamSendsSpan
     ) {
@@ -283,13 +290,18 @@ public class WingtipsSpringWebfluxComponentTest {
 
     // Verify that an error produced by the framework is traced correctly (i.e. an error that occurs
     //      after the WebFilter but before the controller method is executed).
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false",
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> verify_framework_error_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_framework_error_traced_correctly_DataProvider")
     public void verify_framework_error_traced_correctly(
         boolean upstreamSendsSpan, boolean triggerError
     ) {
@@ -415,19 +427,17 @@ public class WingtipsSpringWebfluxComponentTest {
             this.expectEndpointPathInSpanName = expectEndpointPathInSpanName;
         }
     }
-
-    @DataProvider
-    public static List<List<Object>> endpointAndFilterErrorScenarioDataProvider() {
+    public static Stream<Arguments> endpointAndFilterErrorScenario_DataProvider() {
         List<List<Object>> result = new ArrayList<>();
         for (EndpointAndFilterErrorScenario ees : EndpointAndFilterErrorScenario.values()) {
             result.add(Arrays.asList(true, ees));
             result.add(Arrays.asList(false, ees));
         }
-        return result;
+        return result.stream().map(l -> Arguments.of(l.toArray()));
     }
 
-    @UseDataProvider("endpointAndFilterErrorScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("endpointAndFilterErrorScenario_DataProvider")
     public void verify_endpoint_and_filter_error_traced_correctly(
         boolean upstreamSendsSpan, EndpointAndFilterErrorScenario scenario
     ) {
@@ -472,11 +482,15 @@ public class WingtipsSpringWebfluxComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_tracing_state_set_correctly_on_ServerWebExchange_and_webflux_Context_for_endpoint_and_WebFilter_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_tracing_state_set_correctly_on_ServerWebExchange_and_webflux_Context_for_endpoint_and_WebFilter_DataProvider")
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     public void verify_tracing_state_set_correctly_on_ServerWebExchange_and_webflux_Context_for_endpoint_and_WebFilter(
         boolean upstreamSendsSpan
@@ -538,7 +552,6 @@ public class WingtipsSpringWebfluxComponentTest {
         assertThat(subWebFilterTracingStateFromMonoContext).isEqualTo(Optional.of(expectedTracingState));
     }
 
-
     // ========== VERIFY THE WEBCLIENT ExchangeFilterFunction (CLIENTSIDE FILTER) - WingtipsSpringWebfluxExchangeFilterFunction ============
 
     private enum BaseTracingStateScenario {
@@ -599,19 +612,17 @@ public class WingtipsSpringWebfluxComponentTest {
             return webClientAttributesConsumer.apply(tc);
         }
     }
-
-    @DataProvider
-    public static List<List<Object>> baseTracingStateWithSubspanOptionScenarioDataProvider() {
+    public static Stream<Arguments> baseTracingStateWithSubspanOptionScenario_DataProvider() {
         List<List<Object>> result = new ArrayList<>();
         for (BaseTracingStateScenario scenario : BaseTracingStateScenario.values()) {
             result.add(Arrays.asList(scenario, true));
             result.add(Arrays.asList(scenario, false));
         }
-        return result;
+        return result.stream().map(l -> Arguments.of(l.toArray()));
     }
 
-    @UseDataProvider("baseTracingStateWithSubspanOptionScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("baseTracingStateWithSubspanOptionScenario_DataProvider")
     public void verify_webflux_WebClient_with_WingtipsSpringWebfluxExchangeFilterFunction_traced_correctly(
         BaseTracingStateScenario baseTracingStateScenario, boolean subspanOptionOn
     ) {
@@ -677,8 +688,8 @@ public class WingtipsSpringWebfluxComponentTest {
 
     // Verify that an error that occurs in the ExchangeFilterFunction's returned Mono<ClientResponse> doesn't
     //      prevent tracing from working.
-    @UseDataProvider("baseTracingStateWithSubspanOptionScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("baseTracingStateWithSubspanOptionScenario_DataProvider")
     public void verify_webflux_WebClient_call_with_error_in_Mono_of_ClientResponse_traced_correctly(
             BaseTracingStateScenario baseTracingStateScenario, boolean subspanOptionOn
     ) {
@@ -755,8 +766,8 @@ public class WingtipsSpringWebfluxComponentTest {
 
     // Verify that an error thrown from the ExchangeFilterFunction.filter(...) chain (NOT the returned
     //      Mono<ClientResponse>) doesn't prevent tracing from working.
-    @UseDataProvider("baseTracingStateWithSubspanOptionScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("baseTracingStateWithSubspanOptionScenario_DataProvider")
     public void verify_webflux_WebClient_call_with_error_thrown_in_sub_filter_traced_correctly(
         BaseTracingStateScenario baseTracingStateScenario, boolean subspanOptionOn
     ) {
@@ -835,8 +846,8 @@ public class WingtipsSpringWebfluxComponentTest {
         }
     }
 
-    @UseDataProvider("baseTracingStateWithSubspanOptionScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("baseTracingStateWithSubspanOptionScenario_DataProvider")
     public void verify_tracing_state_set_correctly_on_ClientRequest_and_webflux_Context_for_sub_ExchangeFilterFunction(
         BaseTracingStateScenario baseTracingStateScenario, boolean subspanOptionOn
     ) {
@@ -962,7 +973,7 @@ public class WingtipsSpringWebfluxComponentTest {
         Map<String, String> headers = new HashMap<>();
         HttpRequestTracingUtils.propagateTracingHeaders(headers::put, span);
         headers.put(USER_ID_HEADER_KEY, UUID.randomUUID().toString());
-        
+
         return Pair.of(span, headers);
     }
 

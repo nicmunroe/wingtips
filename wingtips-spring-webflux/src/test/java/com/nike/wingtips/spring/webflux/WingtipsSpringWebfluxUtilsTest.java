@@ -5,12 +5,8 @@ import com.nike.wingtips.Span;
 import com.nike.wingtips.TraceHeaders;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ServerWebExchange;
 
 import java.util.Map;
@@ -23,18 +19,21 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsSpringWebfluxUtils}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringWebfluxUtilsTest {
 
     private ServerWebExchange exchangeMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         exchangeMock = mock(ServerWebExchange.class);
     }
@@ -100,11 +99,15 @@ public class WingtipsSpringWebfluxUtilsTest {
         assertThat(result.get(TracingState.class)).isSameAs(tracingStateMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> tracingStateFromContext_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("tracingStateFromContext_works_as_expected_DataProvider")
     public void tracingStateFromContext_works_as_expected(boolean contextHasTracingState) {
         // given
         TracingState tracingStateMock = mock(TracingState.class);

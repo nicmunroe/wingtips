@@ -8,15 +8,11 @@ import com.nike.wingtips.Tracer;
 import com.nike.wingtips.lifecyclelistener.SpanLifecycleListener;
 import com.nike.wingtips.servlet.RequestTracingFilter;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -42,6 +38,10 @@ import io.restassured.response.ExtractableResponse;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Component test to verify that {@link RequestTracingFilter} works as expected when deployed to a real running server
@@ -49,7 +49,6 @@ import static org.assertj.core.api.Assertions.fail;
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class RequestTracingFilterOldServletComponentTest {
 
     private static int port;
@@ -57,7 +56,7 @@ public class RequestTracingFilterOldServletComponentTest {
 
     private SpanRecorder spanRecorder;
 
-    @BeforeClass
+    @BeforeAll
     @SuppressWarnings("JavaReflectionMemberAccess")
     public static void beforeClass() throws Exception {
         try {
@@ -89,7 +88,7 @@ public class RequestTracingFilterOldServletComponentTest {
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         if (server != null) {
             server.stop();
@@ -97,7 +96,7 @@ public class RequestTracingFilterOldServletComponentTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         clearTracerSpanLifecycleListeners();
 
@@ -105,7 +104,7 @@ public class RequestTracingFilterOldServletComponentTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         clearTracerSpanLifecycleListeners();
     }
@@ -114,11 +113,15 @@ public class RequestTracingFilterOldServletComponentTest {
         Tracer.getInstance().removeAllSpanLifecycleListeners();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_blocking_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_endpoint_traced_correctly_DataProvider")
     public void verify_blocking_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -141,11 +144,15 @@ public class RequestTracingFilterOldServletComponentTest {
         verifySingleSpanCompletedAndReturnedInResponse(response, SLEEP_TIME_MILLIS, upstreamSpanInfo.getLeft());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_blocking_forward_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_forward_endpoint_traced_correctly_DataProvider")
     public void verify_blocking_forward_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -187,7 +194,7 @@ public class RequestTracingFilterOldServletComponentTest {
         //      has had a chance to complete the span. Wait a few milliseconds to give the servlet filter time to
         //      finish.
         waitUntilSpanRecorderHasExpectedNumSpans(1);
-        
+
         assertThat(spanRecorder.completedSpans).hasSize(1);
         Span completedSpan = spanRecorder.completedSpans.get(0);
         String traceIdFromResponse = response.header(TraceHeaders.TRACE_ID);

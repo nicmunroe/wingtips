@@ -1,11 +1,10 @@
 package com.nike.wingtips.servlet;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletRequest;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -17,7 +16,7 @@ public class RequestTracingFilterNoAsyncTest {
 
     @Test
     public void isAsyncDispatch_should_always_return_false() {
-        assertThat(instance.isAsyncDispatch(mock(HttpServletRequest.class)), is(false));
+        assertThat(instance.isAsyncDispatch(mock(HttpServletRequest.class))).isFalse();
     }
 
 }

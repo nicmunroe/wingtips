@@ -12,16 +12,12 @@ import com.nike.wingtips.springsample.controller.SampleController.SpanInfoDto;
 import com.nike.wingtips.tags.KnownZipkinTags;
 import com.nike.wingtips.tags.WingtipsTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.eclipse.jetty.server.Server;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -59,6 +55,10 @@ import static com.nike.wingtips.springsample.controller.SampleController.WILDCAR
 import static com.nike.wingtips.springsample.controller.SampleController.WILDCARD_RESULT;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Component test that starts up the sample server and hits it with various requests and verifies that the expected
@@ -66,7 +66,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class VerifySampleEndpointsComponentTest {
 
     private static final int SERVER_PORT = findFreePort();
@@ -74,7 +73,7 @@ public class VerifySampleEndpointsComponentTest {
 
     private SpanRecorder spanRecorder;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         server = Main.createServer(SERVER_PORT);
         server.start();
@@ -86,7 +85,7 @@ public class VerifySampleEndpointsComponentTest {
         throw new IllegalStateException("Server is not up after waiting 10 seconds. Aborting tests.");
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         if (server != null) {
             server.stop();
@@ -102,7 +101,7 @@ public class VerifySampleEndpointsComponentTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         clearTracerSpanLifecycleListeners();
 
@@ -110,7 +109,7 @@ public class VerifySampleEndpointsComponentTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         clearTracerSpanLifecycleListeners();
     }
@@ -119,11 +118,15 @@ public class VerifySampleEndpointsComponentTest {
         Tracer.getInstance().removeAllSpanLifecycleListeners();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_simple_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_simple_endpoint_traced_correctly_DataProvider")
     public void verify_simple_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -159,11 +162,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_blocking_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_endpoint_traced_correctly_DataProvider")
     public void verify_blocking_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -199,11 +206,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_path_param_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_path_param_endpoint_traced_correctly_DataProvider")
     public void verify_path_param_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -242,11 +253,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_wildcard_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_wildcard_endpoint_traced_correctly_DataProvider")
     public void verify_wildcard_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -285,11 +300,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_DeferredResult_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_DeferredResult_endpoint_traced_correctly_DataProvider")
     public void verify_async_DeferredResult_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -325,11 +344,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_Callable_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_Callable_endpoint_traced_correctly_DataProvider")
     public void verify_async_Callable_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -365,11 +388,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_CompletableFuture_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_CompletableFuture_endpoint_traced_correctly_DataProvider")
     public void verify_async_CompletableFuture_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -405,11 +432,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_timeout_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_timeout_endpoint_traced_correctly_DataProvider")
     public void verify_async_timeout_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -444,11 +475,15 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_error_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_error_endpoint_traced_correctly_DataProvider")
     public void verify_async_error_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders()
@@ -483,13 +518,17 @@ public class VerifySampleEndpointsComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_span_info_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_span_info_endpoint_traced_correctly_DataProvider")
     public void verify_span_info_endpoint_traced_correctly(boolean upstreamSendsSpan, boolean upstreamSendsUserId) {
         Pair<Span, Map<String, String>> upstreamSpanInfo = (upstreamSendsSpan)
                                                            ? generateUpstreamSpanHeaders(upstreamSendsUserId)
@@ -532,24 +571,32 @@ public class VerifySampleEndpointsComponentTest {
         }
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_nested_blocking_call_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_nested_blocking_call_traced_correctly_DataProvider")
     public void verify_nested_blocking_call_traced_correctly(boolean upstreamSendsSpan, boolean upstreamSendsUserId) {
         verifyNestedCallEndpoint(upstreamSendsSpan, upstreamSendsUserId, NESTED_BLOCKING_CALL_PATH);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_nested_async_call_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_nested_async_call_traced_correctly_DataProvider")
     public void verify_nested_async_call_traced_correctly(boolean upstreamSendsSpan, boolean upstreamSendsUserId) {
         verifyNestedCallEndpoint(upstreamSendsSpan, upstreamSendsUserId, NESTED_ASYNC_CALL_PATH);
     }

@@ -11,14 +11,10 @@ import com.nike.wingtips.util.parser.SpanParser.JsonDeserializationResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -37,8 +33,11 @@ import static com.nike.wingtips.SpanTest.verifySpanDeepEquals;
 import static com.nike.wingtips.SpanTest.verifySpanEqualsDeserializedValues;
 import static com.nike.wingtips.TestSpanCompleter.completeSpan;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
-@RunWith(DataProviderRunner.class)
 public class SpanParserTest {
 
     private String traceId = TraceAndSpanIdGenerator.generateId();
@@ -58,12 +57,12 @@ public class SpanParserTest {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -133,14 +132,12 @@ public class SpanParserTest {
             this.expectedEscaped = expectedEscaped;
         }
     }
-
-    @DataProvider
-    public static List<List<EscapeJsonScenario>> escapeJsonScenarioDataProvider() {
-        return Arrays.stream(EscapeJsonScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> escapeJsonScenario_DataProvider() {
+        return Arrays.stream(EscapeJsonScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("escapeJsonScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("escapeJsonScenario_DataProvider")
     public void escapeJson_escapes_characters_as_expected(EscapeJsonScenario scenario) throws JsonProcessingException {
         // given
         // Have jackson serialize something with the scenario's string-to-escape, and compare our escapeJson result to it.
@@ -172,8 +169,8 @@ public class SpanParserTest {
         assertThat(SpanParser.escapeJson(orig)).isSameAs(orig);
     }
 
-    @UseDataProvider("escapeJsonScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("escapeJsonScenario_DataProvider")
     public void unescapeJson_unescapes_characters_as_expected(EscapeJsonScenario scenario) throws IOException {
         // given
         // Have jackson deserialize something with the scenario's escaped-value, and compare our unescapeJson result to it.
@@ -237,11 +234,15 @@ public class SpanParserTest {
         assertThat(unescapedMess).isEqualTo(jacksonDeserialized.get("mess"));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getJsonEscapedValueForChar_returns_null_if_passed_int_value_outside_range_of_JSON_ESCAPE_CHAR_MAPPINGS_array_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getJsonEscapedValueForChar_returns_null_if_passed_int_value_outside_range_of_JSON_ESCAPE_CHAR_MAPPINGS_array_DataProvider")
     public void getJsonEscapedValueForChar_returns_null_if_passed_int_value_outside_range_of_JSON_ESCAPE_CHAR_MAPPINGS_array(
         boolean exactArrayLength
     ) {
@@ -304,14 +305,12 @@ public class SpanParserTest {
             this.annotations = annotations;
         }
     }
-
-    @DataProvider
-    public static List<List<TagAndAnnotationScenario>> tagAndAnnotationScenarioDataProvider() {
-        return Arrays.stream(TagAndAnnotationScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> tagAndAnnotationScenario_DataProvider() {
+        return Arrays.stream(TagAndAnnotationScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("tagAndAnnotationScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("tagAndAnnotationScenario_DataProvider")
     public void convertSpanToJSON_should_function_properly_when_there_are_no_null_values(
         TagAndAnnotationScenario scenario
     ) throws IOException {
@@ -329,7 +328,7 @@ public class SpanParserTest {
         assertThat(validSpan.getTags()).isEqualTo(scenario.tags);
         assertThat(validSpan.getTimestampedAnnotations()).isEqualTo(scenario.annotations);
         String json = SpanParser.convertSpanToJSON(validSpan);
-        
+
         // when: jackson is used to deserialize that JSON
         Map<String, Object> spanValuesFromJackson = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
 
@@ -405,8 +404,8 @@ public class SpanParserTest {
         verifySpanEqualsDeserializedValues(validSpan, spanValuesFromJackson);
     }
 
-    @UseDataProvider("tagAndAnnotationScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("tagAndAnnotationScenario_DataProvider")
     public void fromJson_should_function_properly_when_there_are_no_null_values(TagAndAnnotationScenario scenario) {
         // given: valid span without any null values, completed (so that end time is not null) and JSON string
         //      from SpanParser.convertSpanToJSON()
@@ -554,14 +553,12 @@ public class SpanParserTest {
             return badJson;
         }
     }
-
-    @DataProvider
-    public static List<List<BadJsonScenario>> badJsonScenarioDataProvider() {
-        return Arrays.stream(BadJsonScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> badJsonScenario_DataProvider() {
+        return Arrays.stream(BadJsonScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("badJsonScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("badJsonScenario_DataProvider")
     public void fromJson_should_return_null_for_garbage_input(BadJsonScenario scenario) {
         // given: garbage input
         String garbageInput = scenario.generateBadJson(
@@ -621,11 +618,15 @@ public class SpanParserTest {
         assertThat(result).isNull();
     }
 
-    @DataProvider(value = {
-        "",
-        "foobar-not-a-real-enum-value"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> fromJson_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage_DataProvider() {
+        return Stream.of(
+            Arguments.of(""),
+            Arguments.of("foobar-not-a-real-enum-value")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromJson_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage_DataProvider")
     public void fromJson_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage(
         String badValue
     ) {
@@ -671,16 +672,13 @@ public class SpanParserTest {
             this.escapedValue = SpanParser.escapeJson(unescapedValue);
         }
     }
-
-    @DataProvider
-    public static List<List<EscapedAndUnescapedQuotesBeforeKeyOrValueEndScenario>>
-                                escapedAndUnescapedQuotesBeforeKeyOrValueEndScenarioDataProvider() {
+    public static Stream<Arguments> escapedAndUnescapedQuotesBeforeKeyOrValueEndScenario_DataProvider() {
         return Arrays.stream(EscapedAndUnescapedQuotesBeforeKeyOrValueEndScenario.values())
-                     .map(Collections::singletonList).collect(Collectors.toList());
+                     .map(Arguments::of);
     }
 
-    @UseDataProvider("escapedAndUnescapedQuotesBeforeKeyOrValueEndScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("escapedAndUnescapedQuotesBeforeKeyOrValueEndScenario_DataProvider")
     public void fromJSON_properly_handles_escaped_quotes_and_unescaped_quotes_preceded_by_backslashes(
         EscapedAndUnescapedQuotesBeforeKeyOrValueEndScenario scenario
     ) {
@@ -701,11 +699,15 @@ public class SpanParserTest {
         assertThat(result.getTimestampedAnnotations().get(0).getValue()).isEqualTo(scenario.unescapedValue);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> convertToTimestampedAnnotationsList_returns_null_if_passed_null_or_empty_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convertToTimestampedAnnotationsList_returns_null_if_passed_null_or_empty_DataProvider")
     public void convertToTimestampedAnnotationsList_returns_null_if_passed_null_or_empty(boolean isNull) {
         // given
         List<JsonDeserializationResult> jdrList = (isNull) ? null : Collections.emptyList();
@@ -753,8 +755,8 @@ public class SpanParserTest {
         verifySpanDeepEquals(deserialized, span, true);
     }
 
-    @UseDataProvider("tagAndAnnotationScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("tagAndAnnotationScenario_DataProvider")
     public void convertSpanToKeyValueFormat_should_function_properly_when_there_are_no_null_values(
         TagAndAnnotationScenario scenario
     ) {
@@ -865,8 +867,8 @@ public class SpanParserTest {
         verifySpanEqualsDeserializedValues(validSpan, deserializedValues);
     }
 
-    @UseDataProvider("tagAndAnnotationScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("tagAndAnnotationScenario_DataProvider")
     public void fromKeyValueString_should_function_properly_when_there_are_no_null_values(
         TagAndAnnotationScenario scenario) {
         // given: valid span without any null values, completed (so that end time is not null) and key/value string
@@ -968,14 +970,12 @@ public class SpanParserTest {
             return badKeyValueStr;
         }
     }
-
-    @DataProvider
-    public static List<List<BadKeyValueScenario>> badKeyValueScenarioDataProvider() {
-        return Arrays.stream(BadKeyValueScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> badKeyValueScenario_DataProvider() {
+        return Arrays.stream(BadKeyValueScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("badKeyValueScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("badKeyValueScenario_DataProvider")
     public void fromKeyValueString_should_return_null_for_garbage_input(BadKeyValueScenario scenario) {
         // given: garbage input
         String garbageInput = scenario.generateBadKeyValueStr(
@@ -1031,11 +1031,15 @@ public class SpanParserTest {
         assertThat(result).isNull();
     }
 
-    @DataProvider(value = {
-        "",
-        "foobar-not-a-real-enum-value"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> fromKeyValueString_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage_DataProvider() {
+        return Stream.of(
+            Arguments.of(""),
+            Arguments.of("foobar-not-a-real-enum-value")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromKeyValueString_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage_DataProvider")
     public void fromKeyValueString_returns_span_with_UNKNOWN_span_purpose_if_spanPurpose_field_is_missing_or_garbage(
         String badValue
     ) {
@@ -1059,8 +1063,8 @@ public class SpanParserTest {
         assertThat(result.getSpanPurpose()).isEqualTo(SpanPurpose.UNKNOWN);
     }
 
-    @UseDataProvider("escapedAndUnescapedQuotesBeforeKeyOrValueEndScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("escapedAndUnescapedQuotesBeforeKeyOrValueEndScenario_DataProvider")
     public void fromKeyValueString_properly_handles_escaped_quotes_and_unescaped_quotes_preceded_by_backslashes(
         EscapedAndUnescapedQuotesBeforeKeyOrValueEndScenario scenario
     ) {

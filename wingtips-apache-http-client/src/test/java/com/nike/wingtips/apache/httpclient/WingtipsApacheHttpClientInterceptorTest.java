@@ -13,9 +13,6 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.testutils.Whitebox;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
@@ -26,10 +23,9 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.List;
@@ -57,13 +53,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsApacheHttpClientInterceptor}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsApacheHttpClientInterceptorTest {
 
     private WingtipsApacheHttpClientInterceptor interceptor;
@@ -88,7 +87,7 @@ public class WingtipsApacheHttpClientInterceptorTest {
     private String uri;
     private int responseCode;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
 
@@ -127,7 +126,7 @@ public class WingtipsApacheHttpClientInterceptorTest {
         doReturn(responseCode).when(statusLineMock).getStatusCode();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -148,11 +147,15 @@ public class WingtipsApacheHttpClientInterceptorTest {
         assertThat(impl.tagAndNamingAdapter).isSameAs(ApacheHttpClientTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> single_arg_constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("single_arg_constructor_sets_fields_as_expected_DataProvider")
     public void single_arg_constructor_sets_fields_as_expected(boolean argValue) {
         // when
         WingtipsApacheHttpClientInterceptor impl = new WingtipsApacheHttpClientInterceptor(argValue);
@@ -163,11 +166,15 @@ public class WingtipsApacheHttpClientInterceptorTest {
         assertThat(impl.tagAndNamingAdapter).isSameAs(ApacheHttpClientTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> constructor_with_tag_and_span_naming_args_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_tag_and_span_naming_args_sets_fields_as_expected_DataProvider")
     public void constructor_with_tag_and_span_naming_args_sets_fields_as_expected(boolean subspanArgValue) {
         // when
         WingtipsApacheHttpClientInterceptor impl = new WingtipsApacheHttpClientInterceptor(
@@ -206,12 +213,16 @@ public class WingtipsApacheHttpClientInterceptorTest {
             this.expectedExceptionMessage = expectedExceptionMessage;
         }
     }
-    
-    @DataProvider(value = {
-        "NULL_STRATEGY_ARG",
-        "NULL_ADAPTER_ARG"
-    })
-    @Test
+
+    public static Stream<Arguments> constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullConstructorArgsScenario.NULL_STRATEGY_ARG),
+            Arguments.of(NullConstructorArgsScenario.NULL_ADAPTER_ARG)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider")
     public void constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args(
         NullConstructorArgsScenario scenario
     ) {
@@ -226,17 +237,21 @@ public class WingtipsApacheHttpClientInterceptorTest {
             .hasMessage(scenario.expectedExceptionMessage);
     }
 
-    @DataProvider(value = {
-        "true   |   true  | 200",
-        "true   |   true  | 500",
-        "false  |   true  | 200",
-        "false  |   true  | 500",
-        "true   |   false | 200",
-        "true   |   false | 500",
-        "false  |   false | 200",
-        "false  |   false | 500"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> process_request_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, 200),
+            Arguments.of(true, true, 500),
+            Arguments.of(false, true, 200),
+            Arguments.of(false, true, 500),
+            Arguments.of(true, false, 200),
+            Arguments.of(true, false, 500),
+            Arguments.of(false, false, 200),
+            Arguments.of(false, false, 500)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("process_request_works_as_expected_DataProvider")
     public void process_request_works_as_expected(
         boolean subspanOptionOn, boolean parentSpanExists, int responseCode
     ) {
@@ -346,13 +361,17 @@ public class WingtipsApacheHttpClientInterceptorTest {
         }
     }
 
-    @DataProvider(value = {
-        "SUBSPAN_IS_NOT_AVAILABLE_IN_HTTP_CONTEXT",
-        "SUBSPAN_IS_AVAILABLE_IN_HTTP_CONTEXT_BUT_REQUEST_IS_NOT",
-        "SUBSPAN_AND_REQUEST_ARE_AVAILABLE_IN_HTTP_CONTEXT",
-        "SUBSPAN_AND_REQUEST_ARE_AVAILABLE_IN_HTTP_CONTEXT_BUT_REQUEST_IS_NOT_HTTP_REQUEST"
-    })
-    @Test
+    public static Stream<Arguments> process_response_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(ProcessResponseScenario.SUBSPAN_IS_NOT_AVAILABLE_IN_HTTP_CONTEXT),
+            Arguments.of(ProcessResponseScenario.SUBSPAN_IS_AVAILABLE_IN_HTTP_CONTEXT_BUT_REQUEST_IS_NOT),
+            Arguments.of(ProcessResponseScenario.SUBSPAN_AND_REQUEST_ARE_AVAILABLE_IN_HTTP_CONTEXT),
+            Arguments.of(ProcessResponseScenario.SUBSPAN_AND_REQUEST_ARE_AVAILABLE_IN_HTTP_CONTEXT_BUT_REQUEST_IS_NOT_HTTP_REQUEST)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("process_response_works_as_expected_DataProvider")
     public void process_response_works_as_expected(
         ProcessResponseScenario scenario
     ) {
@@ -410,16 +429,20 @@ public class WingtipsApacheHttpClientInterceptorTest {
         verify(spanMock).close();
     }
 
-    @DataProvider(value = {
-        "spanNameFromStrategy   |   someHttpMethod  |   spanNameFromStrategy",
-        "null                   |   someHttpMethod  |   apachehttpclient_downstream_call-someHttpMethod",
-        "                       |   someHttpMethod  |   apachehttpclient_downstream_call-someHttpMethod",
-        "[whitespace]           |   someHttpMethod  |   apachehttpclient_downstream_call-someHttpMethod",
-        "null                   |   null            |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-        "null                   |                   |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-        "null                   |   [whitespace]    |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSubspanSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("spanNameFromStrategy", "someHttpMethod", "spanNameFromStrategy"),
+            Arguments.of(null, "someHttpMethod", "apachehttpclient_downstream_call-someHttpMethod"),
+            Arguments.of("", "someHttpMethod", "apachehttpclient_downstream_call-someHttpMethod"),
+            Arguments.of("[whitespace]", "someHttpMethod", "apachehttpclient_downstream_call-someHttpMethod"),
+            Arguments.of(null, null, "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, "", "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, "[whitespace]", "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSubspanSpanName_works_as_expected_DataProvider")
     public void getSubspanSpanName_works_as_expected(String strategyResult, String httpMethod, String expectedResult) {
         // given
         if ("[whitespace]".equals(strategyResult)) {
@@ -456,11 +479,15 @@ public class WingtipsApacheHttpClientInterceptorTest {
         assertThat(builderInterceptors.lastResponseInterceptors).containsExactly(DEFAULT_RESPONSE_IMPL);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> addTracingInterceptors_double_arg_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("addTracingInterceptors_double_arg_works_as_expected_DataProvider")
     public void addTracingInterceptors_double_arg_works_as_expected(boolean subspanOptionOn) {
         // given
         HttpClientBuilder builder = HttpClientBuilder.create();

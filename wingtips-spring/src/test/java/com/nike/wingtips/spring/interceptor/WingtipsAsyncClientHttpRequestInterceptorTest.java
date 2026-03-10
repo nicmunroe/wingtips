@@ -17,13 +17,9 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -57,13 +53,16 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsAsyncClientHttpRequestInterceptor}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsAsyncClientHttpRequestInterceptorTest {
 
     private HttpRequest requestMock;
@@ -92,7 +91,7 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
     private AtomicReference<RequestTaggingArgs> strategyRequestTaggingArgs;
     private AtomicReference<ResponseTaggingArgs> strategyResponseTaggingArgs;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() throws IOException {
         resetTracing();
 
@@ -134,7 +133,7 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         doReturn(normalResponseCode).when(normalCompletionResponse).getRawStatusCode();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -150,11 +149,15 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         assertThat(interceptor.tagAndNamingAdapter).isSameAs(SpringHttpClientTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> single_arg_constructor_creates_instance_with_subspan_option_set_to_desired_value_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("single_arg_constructor_creates_instance_with_subspan_option_set_to_desired_value_DataProvider")
     public void single_arg_constructor_creates_instance_with_subspan_option_set_to_desired_value(
         boolean subspanOptionOn
     ) {
@@ -168,11 +171,15 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         assertThat(interceptor.tagAndNamingAdapter).isSameAs(SpringHttpClientTagAdapter.getDefaultInstance());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> constructor_with_tag_and_span_naming_args_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_tag_and_span_naming_args_sets_fields_as_expected_DataProvider")
     public void constructor_with_tag_and_span_naming_args_sets_fields_as_expected(boolean subspanOptionOn) {
         // when
         WingtipsAsyncClientHttpRequestInterceptor interceptor = new WingtipsAsyncClientHttpRequestInterceptor(
@@ -212,11 +219,15 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         }
     }
 
-    @DataProvider(value = {
-        "NULL_STRATEGY_ARG",
-        "NULL_ADAPTER_ARG"
-    })
-    @Test
+    public static Stream<Arguments> constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullConstructorArgsScenario.NULL_STRATEGY_ARG),
+            Arguments.of(NullConstructorArgsScenario.NULL_ADAPTER_ARG)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider")
     public void constructor_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args(
         NullConstructorArgsScenario scenario
     ) {
@@ -254,30 +265,34 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         EXCEPTION_THROWN,
         FUTURE_CANCELLED
     }
-    
-    @DataProvider(value = {
-        "true   |   true    |   NORMAL_COMPLETION   |   false",
-        "true   |   false   |   NORMAL_COMPLETION   |   false",
-        "false  |   true    |   NORMAL_COMPLETION   |   false",
-        "false  |   false   |   NORMAL_COMPLETION   |   false",
-        "true   |   true    |   EXCEPTION_THROWN    |   false",
-        "true   |   false   |   EXCEPTION_THROWN    |   false",
-        "false  |   true    |   EXCEPTION_THROWN    |   false",
-        "false  |   false   |   EXCEPTION_THROWN    |   false",
-        "true   |   true    |   FUTURE_CANCELLED    |   false",
-        "true   |   false   |   FUTURE_CANCELLED    |   false",
-        "false  |   true    |   FUTURE_CANCELLED    |   false",
-        "false  |   false   |   FUTURE_CANCELLED    |   false",
-        "true   |   true    |   FUTURE_CANCELLED    |   false",
-        "true   |   false   |   FUTURE_CANCELLED    |   false",
-        "false  |   true    |   FUTURE_CANCELLED    |   false",
-        "false  |   false   |   FUTURE_CANCELLED    |   false",
-        "true   |   true    |   null                |   true",
-        "true   |   false   |   null                |   true",
-        "false  |   true    |   null                |   true",
-        "false  |   false   |   null                |   true"
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> expected_successful_execution_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, ResponseFutureResult.NORMAL_COMPLETION, false),
+            Arguments.of(true, false, ResponseFutureResult.NORMAL_COMPLETION, false),
+            Arguments.of(false, true, ResponseFutureResult.NORMAL_COMPLETION, false),
+            Arguments.of(false, false, ResponseFutureResult.NORMAL_COMPLETION, false),
+            Arguments.of(true, true, ResponseFutureResult.EXCEPTION_THROWN, false),
+            Arguments.of(true, false, ResponseFutureResult.EXCEPTION_THROWN, false),
+            Arguments.of(false, true, ResponseFutureResult.EXCEPTION_THROWN, false),
+            Arguments.of(false, false, ResponseFutureResult.EXCEPTION_THROWN, false),
+            Arguments.of(true, true, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(true, false, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(false, true, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(false, false, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(true, true, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(true, false, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(false, true, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(false, false, ResponseFutureResult.FUTURE_CANCELLED, false),
+            Arguments.of(true, true, null, true),
+            Arguments.of(true, false, null, true),
+            Arguments.of(false, true, null, true),
+            Arguments.of(false, false, null, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("expected_successful_execution_DataProvider")
     public void expected_successful_execution(
         boolean currentSpanExists,
         boolean subspanOptionOn,
@@ -470,7 +485,7 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
 
             assertThat(strategyResponseTaggingAndFinalSpanNameMethodCalled.get()).isFalse();
             assertThat(strategyResponseTaggingArgs.get()).isNull();
-            
+
             // We already verified that the propagation headers were added (or not) as appropriate depending on
             //      whether the tracingStateAtTimeOfExecution had a span (or not). So we'll do one last explicit
             //      verification that tracingStateAtTimeOfExecution is populated (or not) based on whether a current
@@ -488,13 +503,17 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
             .isEqualTo(normalizeTracingState(tracingStateBeforeInterceptorCall));
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> intercept_handles_span_closing_logic_even_if_execution_explodes_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("intercept_handles_span_closing_logic_even_if_execution_explodes_DataProvider")
     public void intercept_handles_span_closing_logic_even_if_execution_explodes(
         boolean currentSpanExists, boolean subspanOptionOn
     ) throws IOException {
@@ -552,14 +571,18 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
             .isEqualTo(normalizeTracingState(tracingStateBeforeInterceptorCall));
     }
 
-    @DataProvider(value = {
-        "spanNameFromStrategy   |   PATCH           |   spanNameFromStrategy",
-        "null                   |   PATCH           |   asyncresttemplate_downstream_call-PATCH",
-        "                       |   PATCH           |   asyncresttemplate_downstream_call-PATCH",
-        "[whitespace]           |   PATCH           |   asyncresttemplate_downstream_call-PATCH",
-        "null                   |   null            |   asyncresttemplate_downstream_call-UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSubspanSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("spanNameFromStrategy", HttpMethod.PATCH, "spanNameFromStrategy"),
+            Arguments.of(null, HttpMethod.PATCH, "asyncresttemplate_downstream_call-PATCH"),
+            Arguments.of("", HttpMethod.PATCH, "asyncresttemplate_downstream_call-PATCH"),
+            Arguments.of("[whitespace]", HttpMethod.PATCH, "asyncresttemplate_downstream_call-PATCH"),
+            Arguments.of(null, null, "asyncresttemplate_downstream_call-UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSubspanSpanName_works_as_expected_DataProvider")
     public void getSubspanSpanName_works_as_expected(
         String strategyResult, HttpMethod httpMethod, String expectedResult
     ) {
@@ -603,7 +626,6 @@ public class WingtipsAsyncClientHttpRequestInterceptorTest {
         HttpRequestWrapperWithModifiableHeaders wrapperRequest =
             new HttpRequestWrapperWithModifiableHeaders(requestMock);
         byte[] body = new byte[]{42};
-
 
         // when
         Throwable ex = catchThrowable(

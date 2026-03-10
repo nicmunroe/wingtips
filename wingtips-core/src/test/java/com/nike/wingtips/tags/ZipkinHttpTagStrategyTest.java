@@ -2,12 +2,8 @@ package com.nike.wingtips.tags;
 
 import com.nike.wingtips.Span;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -18,13 +14,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionalty of {@link ZipkinHttpTagStrategy}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ZipkinHttpTagStrategyTest {
 
     private ZipkinHttpTagStrategy<Object, Object> implSpy;
@@ -34,7 +33,7 @@ public class ZipkinHttpTagStrategyTest {
     private Throwable errorMock;
     private HttpTagAndSpanNamingAdapter<Object, Object> adapterMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new ZipkinHttpTagStrategy<>());
 
@@ -72,7 +71,7 @@ public class ZipkinHttpTagStrategyTest {
         verify(adapterMock).getRequestPath(requestMock);
         verify(adapterMock).getRequestUrl(requestMock);
         verify(adapterMock).getRequestUriPathTemplate(requestMock, null);
-        
+
         verify(implSpy).putTagIfValueIsNotBlank(spanMock, KnownZipkinTags.HTTP_METHOD, adapterHttpMethod);
         verify(implSpy).putTagIfValueIsNotBlank(spanMock, KnownZipkinTags.HTTP_PATH, adapterPath);
         verify(implSpy).putTagIfValueIsNotBlank(spanMock, KnownZipkinTags.HTTP_URL, adapterHttpUrl);
@@ -105,15 +104,19 @@ public class ZipkinHttpTagStrategyTest {
         }
     }
 
-    @DataProvider(value = {
-        "ERROR_IS_NOT_NULL_AND_HAS_MESSAGE",
-        "ERROR_IS_NOT_NULL_BUT_HAS_NO_MESSAGE",
-        "ERROR_IS_NULL_BUT_ADAPTER_ERROR_TAG_VALUE_IS_NOT_BLANK",
-        "ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_NULL",
-        "ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_EMPTY",
-        "ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_WHITESPACE"
-    })
-    @Test
+    public static Stream<Arguments> doHandleResponseAndErrorTagging_puts_expected_tags_based_on_adapter_results_and_error_existence_DataProvider() {
+        return Stream.of(
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NOT_NULL_AND_HAS_MESSAGE),
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NOT_NULL_BUT_HAS_NO_MESSAGE),
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NULL_BUT_ADAPTER_ERROR_TAG_VALUE_IS_NOT_BLANK),
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_NULL),
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_EMPTY),
+            Arguments.of(ErrorTaggingScenario.ERROR_IS_NULL_AND_ADAPTER_ERROR_TAG_VALUE_IS_WHITESPACE)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doHandleResponseAndErrorTagging_puts_expected_tags_based_on_adapter_results_and_error_existence_DataProvider")
     public void doHandleResponseAndErrorTagging_puts_expected_tags_based_on_adapter_results_and_error_existence(
         ErrorTaggingScenario scenario
     ) {
@@ -148,5 +151,5 @@ public class ZipkinHttpTagStrategyTest {
             verify(implSpy).putTagIfValueIsNotBlank(spanMock, KnownZipkinTags.ERROR, scenario.expectedErrorTagValue);
         }
     }
-    
+
 }

@@ -24,5 +24,5 @@ public class ComponentTestMainWithReporterAndConverterOverrides {
     public WingtipsToZipkinSpanConverter customConverter() {
         return ComponentTestMainWithConverterOverride.CUSTOM_CONVERTER_INSTANCE;
     }
-    
+
 }

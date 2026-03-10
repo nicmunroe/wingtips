@@ -3,13 +3,9 @@ package com.nike.wingtips.util;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Tracer;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.ArrayDeque;
@@ -23,20 +19,23 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link TracingState}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class TracingStateTest {
 
     private Deque<Span> spanStackMock;
     private Map<String, String> mdcInfoMock;
     private TracingState tracingState;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         spanStackMock = mock(Deque.class);
         mdcInfoMock = mock(Map.class);
@@ -119,11 +118,15 @@ public class TracingStateTest {
         verify(stackMock).peek();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getActiveSpan_returns_null_if_stack_is_null_or_empty_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getActiveSpan_returns_null_if_stack_is_null_or_empty_DataProvider")
     public void getActiveSpan_returns_null_if_stack_is_null_or_empty(boolean stackIsNull) {
         // given
         Deque<Span> stack = (stackIsNull) ? null : new ArrayDeque<>();

@@ -10,14 +10,9 @@ import com.nike.wingtips.util.TracerManagedSpanStatus;
 import com.nike.wingtips.util.TracingState;
 import com.nike.wingtips.util.parser.SpanParser;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
@@ -51,11 +46,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link Tracer}
  */
-@RunWith(DataProviderRunner.class)
 public class TracerTest {
 
     private void resetTracer() {
@@ -66,12 +65,12 @@ public class TracerTest {
         Tracer.getInstance().setSpanFieldsForLoggerMdc(singleton(SpanFieldForLoggerMdc.TRACE_ID));
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracer();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracer();
     }
@@ -270,20 +269,26 @@ public class TracerTest {
         assertThat(span.getSpanName()).isEqualTo("childspan");
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void startRequestWithChildSpan_throws_IllegalArgumentException_if_passed_null_parent() {
-        // expect
-        Tracer.getInstance().startRequestWithChildSpan(null, "somechildspan");
-        fail("Expected IllegalArgumentException but no exception was thrown");
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            Tracer.getInstance().startRequestWithChildSpan(null, "somechildspan");
+            fail("Expected IllegalArgumentException but no exception was thrown");
+        });
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> startRequestWithSpanInfo_should_start_valid_span_with_given_data_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("startRequestWithSpanInfo_should_start_valid_span_with_given_data_DataProvider")
     public void startRequestWithSpanInfo_should_start_valid_span_with_given_data(SpanPurpose spanPurpose) {
         // given
         String traceId = UUID.randomUUID().toString();
@@ -319,13 +324,17 @@ public class TracerTest {
         assertThat(span.getDurationNanos()).isNull();
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> startSubSpan_should_start_valid_sub_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("startSubSpan_should_start_valid_sub_span_DataProvider")
     public void startSubSpan_should_start_valid_sub_span(SpanPurpose spanPurpose) {
         // given: an already-started span
         assertThat(getSpanStackSize()).isEqualTo(0);
@@ -350,7 +359,7 @@ public class TracerTest {
         long expectedMaxChildStartEpochMicros =
             firstSpan.getSpanStartTimeEpochMicros() + TimeUnit.NANOSECONDS.toMicros(afterNanoTime - firstSpan.getSpanStartTimeNanos());
         assertThat(subspan.getSpanStartTimeEpochMicros()).isBetween(expectedMinChildStartEpochMicros, expectedMaxChildStartEpochMicros);
-        
+
         assertThat(subspan.getSpanStartTimeNanos()).isBetween(beforeNanoTime, afterNanoTime);
         assertThat(subspan.isCompleted()).isFalse();
         assertThat(subspan.getDurationNanos()).isNull();
@@ -361,13 +370,17 @@ public class TracerTest {
         assertThat(MDC.get(SpanFieldForLoggerMdc.TRACE_ID.mdcKey)).isEqualTo(subspan.getTraceId());
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> startSubSpan_should_function_like_startRequestWithRootSpan_when_there_is_no_parent_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("startSubSpan_should_function_like_startRequestWithRootSpan_when_there_is_no_parent_span_DataProvider")
     public void startSubSpan_should_function_like_startRequestWithRootSpan_when_there_is_no_parent_span(SpanPurpose spanPurpose) {
         // given: no span started
         assertThat(Tracer.getInstance().getCurrentSpan()).isNull();
@@ -398,11 +411,15 @@ public class TracerTest {
         assertThat(MDC.get(SpanFieldForLoggerMdc.TRACE_ID.mdcKey)).isEqualTo(subspan.getTraceId());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> startSpanInCurrentContext_single_arg_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("startSpanInCurrentContext_single_arg_works_as_expected_DataProvider")
     public void startSpanInCurrentContext_single_arg_works_as_expected(boolean startWithSpanOnStack) {
         // given
         Span parentSpan = (startWithSpanOnStack)
@@ -416,7 +433,7 @@ public class TracerTest {
         // then
         assertThat(Tracer.getInstance().getCurrentSpan()).isSameAs(newSpan);
         assertThat(newSpan.getSpanName()).isEqualTo(desiredNewSpanName);
-        
+
         if (startWithSpanOnStack) {
             Deque<Span> expectedStack = new ArrayDeque<>();
             expectedStack.push(parentSpan);
@@ -433,17 +450,21 @@ public class TracerTest {
         }
     }
 
-    @DataProvider(value = {
-        "SERVER     |   true",
-        "SERVER     |   false",
-        "CLIENT     |   true",
-        "CLIENT     |   false",
-        "LOCAL_ONLY |   true",
-        "LOCAL_ONLY |   false",
-        "UNKNOWN    |   true",
-        "UNKNOWN    |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> startSpanInCurrentContext_double_arg_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER, true),
+            Arguments.of(SpanPurpose.SERVER, false),
+            Arguments.of(SpanPurpose.CLIENT, true),
+            Arguments.of(SpanPurpose.CLIENT, false),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, true),
+            Arguments.of(SpanPurpose.LOCAL_ONLY, false),
+            Arguments.of(SpanPurpose.UNKNOWN, true),
+            Arguments.of(SpanPurpose.UNKNOWN, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("startSpanInCurrentContext_double_arg_works_as_expected_DataProvider")
     public void startSpanInCurrentContext_double_arg_works_as_expected(
         SpanPurpose spanPurpose, boolean startWithSpanOnStack
     ) {
@@ -508,15 +529,15 @@ public class TracerTest {
         assertThat(outerSpan.isCompleted()).isTrue();
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void starting_a_request_with_null_span_name_should_throw_IllegalArgumentException() {
-        // expect
-        Tracer.getInstance().startRequestWithRootSpan(null);
-        fail("Expected IllegalArgumentException but no exception was thrown");
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            Tracer.getInstance().startRequestWithRootSpan(null);
+            fail("Expected IllegalArgumentException but no exception was thrown");
+        });
     }
-
-    @DataProvider
-    public static Object[][] spanStackDataProvider() {
+    public static Object[][] spanStack_DataProvider() {
         Span rootSpan = Span.generateRootSpanForNewTrace("rootspan", SpanPurpose.SERVER).build();
         Span childSpan = rootSpan.generateChildSpan("childSpan", SpanPurpose.CLIENT);
 
@@ -528,8 +549,8 @@ public class TracerTest {
         };
     }
 
-    @Test
-    @UseDataProvider("spanStackDataProvider")
+    @ParameterizedTest
+    @MethodSource("spanStack_DataProvider")
     public void starting_a_request_should_reset_span_stack_no_matter_what_the_span_stack_already_looked_like(Deque<Span> stackToUse) {
         // given
         getSpanStackThreadLocal().set(stackToUse);
@@ -582,13 +603,17 @@ public class TracerTest {
         }
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        "TRACE_ID",
-        "TRACE_ID,SPAN_ID,PARENT_SPAN_ID,FULL_SPAN_JSON"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> configureMDC_should_set_span_values_on_MDC_based_on_spanFieldsForLoggerMdc_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of("TRACE_ID"),
+            Arguments.of("TRACE_ID,SPAN_ID,PARENT_SPAN_ID,FULL_SPAN_JSON")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("configureMDC_should_set_span_values_on_MDC_based_on_spanFieldsForLoggerMdc_DataProvider")
     public void configureMDC_should_set_span_values_on_MDC_based_on_spanFieldsForLoggerMdc(
         String rawSpanFields
     ) {
@@ -631,13 +656,17 @@ public class TracerTest {
                      .collect(Collectors.toSet());
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        "TRACE_ID",
-        "TRACE_ID,SPAN_ID,PARENT_SPAN_ID,FULL_SPAN_JSON"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unconfigureMDC_should_unset_span_values_on_MDC_based_on_spanFieldsForLoggerMdc_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of("TRACE_ID"),
+            Arguments.of("TRACE_ID,SPAN_ID,PARENT_SPAN_ID,FULL_SPAN_JSON")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unconfigureMDC_should_unset_span_values_on_MDC_based_on_spanFieldsForLoggerMdc_DataProvider")
     public void unconfigureMDC_should_unset_span_values_on_MDC_based_on_spanFieldsForLoggerMdc(
         String rawSpanFields
     ) {
@@ -679,7 +708,6 @@ public class TracerTest {
         // then
         assertThat(span).isNotNull();
         assertThat(span.getSpanName()).isEqualTo("test-span");
-
     }
 
     private void verifyDurationBetweenLowerAndUpperBounds(Span span, long beforeCompletionCallNanoTime, long afterCompletionCallNanoTime) {
@@ -854,10 +882,12 @@ public class TracerTest {
         assertThat(Whitebox.getInternalState(Tracer.getInstance(), "rootSpanSamplingStrategy")).isSameAs(strategy);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void setRootSpanSamplingStrategy_should_explode_if_passed_null() {
-        // expect
-        Tracer.getInstance().setRootSpanSamplingStrategy(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            Tracer.getInstance().setRootSpanSamplingStrategy(null);
+        });
     }
 
     @Test
@@ -1106,7 +1136,6 @@ public class TracerTest {
         verify(listener2).spanStarted(span);
         verify(listener2).spanSampled(span);
         verify(listener2, times(0)).spanCompleted(span);
-
     }
 
     @Test
@@ -1215,7 +1244,6 @@ public class TracerTest {
         verify(listener2).spanStarted(subspan);
         verify(listener2).spanSampled(subspan);
         verify(listener2, times(0)).spanCompleted(subspan);
-
     }
 
     @Test
@@ -1461,8 +1489,6 @@ public class TracerTest {
         assertThat(getSpanStackThreadLocal().get()).isEqualTo(emptyStack);
         assertThat(MDC.get(SpanFieldForLoggerMdc.TRACE_ID.mdcKey)).isNull();
     }
-
-    @DataProvider
     public static Object[][] dataProviderForContainsSameSpansInSameOrder() {
         Span spanA = Span.newBuilder("span-A", SpanPurpose.LOCAL_ONLY).withTraceId("A").build();
         Span spanB = Span.newBuilder("span-B", SpanPurpose.SERVER).withTraceId("B").build();
@@ -1493,8 +1519,8 @@ public class TracerTest {
         };
     }
 
-    @Test
-    @UseDataProvider("dataProviderForContainsSameSpansInSameOrder")
+    @ParameterizedTest
+    @MethodSource("dataProviderForContainsSameSpansInSameOrder")
     public void containsSameSpansInSameOrder_should_work_as_expected_for_known_data(Deque<Span> stack, Deque<Span> otherStack, boolean expected, String testId) {
         assertThat(Tracer.getInstance().containsSameSpansInSameOrder(stack, otherStack)).isEqualTo(expected).withFailMessage("Test failed: " + testId);
     }
@@ -1684,11 +1710,15 @@ public class TracerTest {
         assertThat(currentTracingState.mdcInfo).isEqualTo(currentMdcInfo);
     }
 
-    @DataProvider(value = {
-        "JSON",
-        "KEY_VALUE"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_span_serialization_methods_DataProvider() {
+        return Stream.of(
+            Arguments.of(Tracer.SpanLoggingRepresentation.JSON),
+            Arguments.of(Tracer.SpanLoggingRepresentation.KEY_VALUE)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_span_serialization_methods_DataProvider")
     public void verify_span_serialization_methods(Tracer.SpanLoggingRepresentation serializationOption) {
         // given
         Span span = Span.generateRootSpanForNewTrace(UUID.randomUUID().toString(), SpanPurpose.LOCAL_ONLY).build();
@@ -1715,10 +1745,12 @@ public class TracerTest {
         assertThat(serializedString).isEqualTo(expectedOutput);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void setSpanLoggingRepresentation_blows_up_if_spanLoggingRepresentation_is_null() {
-        // expect
-        Tracer.getInstance().setSpanLoggingRepresentation(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            // expect
+            Tracer.getInstance().setSpanLoggingRepresentation(null);
+        });
     }
 
     @Test
@@ -1775,12 +1807,16 @@ public class TracerTest {
         assertThat(Tracer.getInstance().getCurrentSpanStackCopy()).isEqualTo(singletonList(rootSpan));
     }
 
-    @DataProvider(value = {
-        "0",
-        "1",
-        "2"
-    })
-    @Test
+    public static Stream<Arguments> handleSpanCloseMethod_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack_DataProvider() {
+        return Stream.of(
+            Arguments.of(0),
+            Arguments.of(1),
+            Arguments.of(2)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("handleSpanCloseMethod_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack_DataProvider")
     public void handleSpanCloseMethod_handles_non_Tracer_managed_spans_gracefully_without_affecting_existing_stack(
         int numValidSpansOnStack
     ) {
@@ -1884,7 +1920,6 @@ public class TracerTest {
 
             // then
             assertThat(tmss).isEqualTo(TracerManagedSpanStatus.MANAGED_CURRENT_SUB_SPAN);
-
         }
     }
 
@@ -1938,18 +1973,22 @@ public class TracerTest {
             .isEqualTo(new HashSet<>(Arrays.asList(selectedFields)));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> setSpanFieldsForLoggerMdc_varargs_handles_empty_or_null_array_gracefully_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("setSpanFieldsForLoggerMdc_varargs_handles_empty_or_null_array_gracefully_DataProvider")
     public void setSpanFieldsForLoggerMdc_varargs_handles_empty_or_null_array_gracefully(boolean isNullArray) {
         // given
         SpanFieldForLoggerMdc[] selectedFields = (isNullArray) ? null : new SpanFieldForLoggerMdc[0];
 
         assertThat(Tracer.getInstance().getSpanFieldsForLoggerMdc())
             .isEqualTo(singleton(SpanFieldForLoggerMdc.TRACE_ID));
-        
+
         // when
         Tracer.getInstance().setSpanFieldsForLoggerMdc(selectedFields);
 
@@ -1975,11 +2014,15 @@ public class TracerTest {
         assertThat(Tracer.getInstance().getSpanFieldsForLoggerMdc()).isEqualTo(selectedFields);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> setSpanFieldsForLoggerMdc_with_Set_arg_handles_empty_or_null_array_gracefully_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("setSpanFieldsForLoggerMdc_with_Set_arg_handles_empty_or_null_array_gracefully_DataProvider")
     public void setSpanFieldsForLoggerMdc_with_Set_arg_handles_empty_or_null_array_gracefully(boolean isNullSet) {
         // given
         Set<SpanFieldForLoggerMdc> selectedFields = (isNullSet) ? null : new HashSet<>();

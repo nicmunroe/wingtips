@@ -17,14 +17,9 @@ import com.nike.wingtips.tags.OpenTracingHttpTagStrategy;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.testutils.Whitebox;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -51,13 +46,15 @@ import reactor.core.scheduler.Schedulers;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link WingtipsSpringBoot2WebfluxConfiguration}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringBoot2WebfluxConfigurationTest {
 
     private WingtipsSpringBoot2WebfluxProperties generateProps(
@@ -78,13 +75,13 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
         return props;
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         Schedulers.removeExecutorServiceDecorator(WingtipsReactorInitializer.WINGTIPS_SCHEDULER_KEY);
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         Schedulers.removeExecutorServiceDecorator(WingtipsReactorInitializer.WINGTIPS_SCHEDULER_KEY);
         resetTracing();
@@ -96,12 +93,16 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
         Tracer.getInstance().removeAllSpanLifecycleListeners();
     }
 
-    @DataProvider(value = {
-            "JSON",
-            "KEY_VALUE",
-            "null"
-    })
-    @Test
+    public static Stream<Arguments> constructor_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanLoggingRepresentation.JSON),
+            Arguments.of(SpanLoggingRepresentation.KEY_VALUE),
+            Arguments.of((Object) null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_works_as_expected_DataProvider")
     public void constructor_works_as_expected(SpanLoggingRepresentation spanLoggingFormat) {
         // given
         WingtipsSpringBoot2WebfluxProperties props = generateProps(
@@ -183,18 +184,22 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
     static class CustomTagAdapter extends SpringWebfluxServerRequestTagAdapter {
     }
 
-    @DataProvider(value = {
-            "true   |   USER_ID_HEADER_KEYS_PROP_IS_SET",
-            "true   |   TAG_AND_NAMING_STRATEGY_PROP_IS_SET",
-            "true   |   TAG_AND_NAMING_ADAPTER_PROP_IS_SET",
-            "true   |   ALL_PROPS_ARE_SET",
-            "false  |   USER_ID_HEADER_KEYS_PROP_IS_SET",
-            "false  |   TAG_AND_NAMING_STRATEGY_PROP_IS_SET",
-            "false  |   TAG_AND_NAMING_ADAPTER_PROP_IS_SET",
-            "false  |   ALL_PROPS_ARE_SET"
-    }, splitBy = "\\|")
+    public static Stream<Arguments> wingtipsRequestTracingFilter_returns_WingtipsSpringWebfluxWebFilter_with_expected_values_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, PropertiesScenario.USER_ID_HEADER_KEYS_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.TAG_AND_NAMING_STRATEGY_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.TAG_AND_NAMING_ADAPTER_PROP_IS_SET),
+            Arguments.of(true, PropertiesScenario.ALL_PROPS_ARE_SET),
+            Arguments.of(false, PropertiesScenario.USER_ID_HEADER_KEYS_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.TAG_AND_NAMING_STRATEGY_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.TAG_AND_NAMING_ADAPTER_PROP_IS_SET),
+            Arguments.of(false, PropertiesScenario.ALL_PROPS_ARE_SET)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("wingtipsRequestTracingFilter_returns_WingtipsSpringWebfluxWebFilter_with_expected_values_DataProvider")
     @SuppressWarnings("unchecked")
-    @Test
     public void wingtipsRequestTracingFilter_returns_WingtipsSpringWebfluxWebFilter_with_expected_values(
             boolean appFilterOverrideIsNull, PropertiesScenario scenario
     ) {
@@ -248,11 +253,15 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
         assertThat(conf.wingtipsSpringWebfluxWebFilter()).isNull();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> reactorInitializer_returns_WingtipsReactorInitializer_with_expected_values_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("reactorInitializer_returns_WingtipsReactorInitializer_with_expected_values_DataProvider")
     public void reactorInitializer_returns_WingtipsReactorInitializer_with_expected_values(
         boolean reactorEnabled
     ) {
@@ -288,16 +297,13 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
             this.expectedResult = expectedResult;
         }
     }
-
-    @DataProvider
-    public static List<List<ExtractUserIdHeaderKeysScenario>> extractUserIdHeaderKeysScenarioDataProvider() {
+    public static Stream<Arguments> extractUserIdHeaderKeysScenario_DataProvider() {
         return Stream.of(ExtractUserIdHeaderKeysScenario.values())
-                .map(Collections::singletonList)
-                .collect(Collectors.toList());
+                .map(Arguments::of);
     }
 
-    @UseDataProvider("extractUserIdHeaderKeysScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("extractUserIdHeaderKeysScenario_DataProvider")
     public void extractUserIdHeaderKeysAsList_works_as_expected(
             ExtractUserIdHeaderKeysScenario scenario
     ) {
@@ -376,16 +382,13 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
             this.expectedExactMatch = expectedExactMatch;
         }
     }
-
-    @DataProvider
-    public static List<List<ExtractTagAndNamingStrategyScenario>> extractTagAndNamingStrategyScenarioDataProvider() {
+    public static Stream<Arguments> extractTagAndNamingStrategyScenario_DataProvider() {
         return Stream.of(ExtractTagAndNamingStrategyScenario.values())
-                .map(Collections::singletonList)
-                .collect(Collectors.toList());
+                .map(Arguments::of);
     }
 
-    @UseDataProvider("extractTagAndNamingStrategyScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("extractTagAndNamingStrategyScenario_DataProvider")
     public void extractTagAndNamingStrategy_works_as_expected(
             ExtractTagAndNamingStrategyScenario scenario
     ) {
@@ -435,16 +438,13 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
             this.expectedResultClass = expectedResultClass;
         }
     }
-
-    @DataProvider
-    public static List<List<ExtractTagAndNamingAdapterScenario>> extractTagAndNamingAdapterScenarioDataProvider() {
+    public static Stream<Arguments> extractTagAndNamingAdapterScenario_DataProvider() {
         return Stream.of(ExtractTagAndNamingAdapterScenario.values())
-                .map(Collections::singletonList)
-                .collect(Collectors.toList());
+                .map(Arguments::of);
     }
 
-    @UseDataProvider("extractTagAndNamingAdapterScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("extractTagAndNamingAdapterScenario_DataProvider")
     public void extractTagAndNamingAdapter_works_as_expected(
             ExtractTagAndNamingAdapterScenario scenario
     ) {
@@ -487,12 +487,17 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
     //      WingtipsSpringBoot2WebfluxConfiguration and WingtipsSpringBoot2WebfluxProperties when it is component
     //      scanned, imported manually, or both. Specifically we should not get multiple bean definition errors even
     //      when WingtipsSpringBoot2WebfluxConfiguration is *both* component scanned *and* imported manually.
-    @DataProvider(value = {
-            "MANUAL_IMPORT_ONLY",
-            "COMPONENT_SCAN_ONLY",
-            "BOTH_MANUAL_AND_COMPONENT_SCAN"
-    })
-    @Test
+
+    public static Stream<Arguments> component_test_DataProvider() {
+        return Stream.of(
+            Arguments.of(ComponentTestSetup.MANUAL_IMPORT_ONLY),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_ONLY),
+            Arguments.of(ComponentTestSetup.BOTH_MANUAL_AND_COMPONENT_SCAN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("component_test_DataProvider")
     public void component_test(ComponentTestSetup componentTestSetup) {
         // given
         int serverPort = findFreePort();
@@ -540,13 +545,17 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
         }
     }
 
-    @DataProvider(value = {
-            "MANUAL_IMPORT_ONLY                     |   true",
-            "COMPONENT_SCAN_ONLY                    |   true",
-            "COMPONENT_SCAN_WITHOUT_REACTOR_SUPPORT |   false",
-            "BOTH_MANUAL_AND_COMPONENT_SCAN         |   true"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> project_reactor_wingtips_integration_should_work_as_expected_when_using_subscribeOn_DataProvider() {
+        return Stream.of(
+            Arguments.of(ComponentTestSetup.MANUAL_IMPORT_ONLY, true),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_ONLY, true),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_WITHOUT_REACTOR_SUPPORT, false),
+            Arguments.of(ComponentTestSetup.BOTH_MANUAL_AND_COMPONENT_SCAN, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("project_reactor_wingtips_integration_should_work_as_expected_when_using_subscribeOn_DataProvider")
     public void project_reactor_wingtips_integration_should_work_as_expected_when_using_subscribeOn(
         ComponentTestSetup componentTestSetup,
         boolean expectTracingToPropagate
@@ -606,13 +615,17 @@ public class WingtipsSpringBoot2WebfluxConfigurationTest {
         }
     }
 
-    @DataProvider(value = {
-        "MANUAL_IMPORT_ONLY                     |   true",
-        "COMPONENT_SCAN_ONLY                    |   true",
-        "COMPONENT_SCAN_WITHOUT_REACTOR_SUPPORT |   false",
-        "BOTH_MANUAL_AND_COMPONENT_SCAN         |   true"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> project_reactor_wingtips_integration_should_work_as_expected_when_using_publishOn_DataProvider() {
+        return Stream.of(
+            Arguments.of(ComponentTestSetup.MANUAL_IMPORT_ONLY, true),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_ONLY, true),
+            Arguments.of(ComponentTestSetup.COMPONENT_SCAN_WITHOUT_REACTOR_SUPPORT, false),
+            Arguments.of(ComponentTestSetup.BOTH_MANUAL_AND_COMPONENT_SCAN, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("project_reactor_wingtips_integration_should_work_as_expected_when_using_publishOn_DataProvider")
     public void project_reactor_wingtips_integration_should_work_as_expected_when_using_publishOn(
         ComponentTestSetup componentTestSetup,
         boolean expectTracingToPropagate

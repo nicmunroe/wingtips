@@ -19,16 +19,11 @@ import com.nike.wingtips.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.Requ
 import com.nike.wingtips.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.ResponseTaggingArgs;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -69,11 +64,15 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link RequestTracingFilter}
  */
-@RunWith(DataProviderRunner.class)
 public class RequestTracingFilterTest {
 
     private HttpServletRequest requestMock;
@@ -132,7 +131,7 @@ public class RequestTracingFilterTest {
         );
     }
 
-    @Before
+    @BeforeEach
     public void setupMethod() {
         requestMock = mock(HttpServletRequest.class);
         responseMock = mock(HttpServletResponse.class);
@@ -163,7 +162,7 @@ public class RequestTracingFilterTest {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -208,10 +207,7 @@ public class RequestTracingFilterTest {
         verify(filterSpy).initializeTagAndNamingAdapter(filterConfigMock);
         verifyNoMoreInteractions(filterSpy);
     }
-
-    @DataProvider
-    public static Object[][] userIdHeaderKeysInitParamDataProvider() {
-
+    public static Object[][] userIdHeaderKeysInitParam_DataProvider() {
         return new Object[][]{
             {null, null},
             {"", Collections.emptyList()},
@@ -222,9 +218,9 @@ public class RequestTracingFilterTest {
             {"ASDF, QWER, ZXCV", Arrays.asList("ASDF", "QWER", "ZXCV")}
         };
     }
-    
-    @Test
-    @UseDataProvider("userIdHeaderKeysInitParamDataProvider")
+
+    @ParameterizedTest
+    @MethodSource("userIdHeaderKeysInitParam_DataProvider")
     public void initializeUserIdHeaderKeys_gets_user_id_header_key_list_from_init_params(
         String userIdHeaderKeysInitParamValue,
         List<String> expectedUserIdHeaderKeysList
@@ -268,11 +264,15 @@ public class RequestTracingFilterTest {
         assertThat(result).isSameAs(expectedUserIdHeaderKeys);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> initializeTagAndNamingStrategy_delegates_to_getTagStrategyFromName_and_returns_default_if_exception_is_thrown_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeTagAndNamingStrategy_delegates_to_getTagStrategyFromName_and_returns_default_if_exception_is_thrown_DataProvider")
     public void initializeTagAndNamingStrategy_delegates_to_getTagStrategyFromName_and_returns_default_if_exception_is_thrown(
         boolean throwException
     ) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -282,7 +282,7 @@ public class RequestTracingFilterTest {
         String tagStrategyFromFilterConfig = UUID.randomUUID().toString();
         doReturn(tagStrategyFromFilterConfig)
             .when(filterConfigMock).getInitParameter(TAG_AND_SPAN_NAMING_STRATEGY_INIT_PARAM_NAME);
-        
+
         HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> strategyFromDesiredMethodMock =
             mock(HttpTagAndSpanNamingStrategy.class);
         HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse> fallbackDefaultStrategyMock =
@@ -314,20 +314,24 @@ public class RequestTracingFilterTest {
         }
     }
 
-    @DataProvider(value = {
-        "ZIPKIN",
-        "Zipkin",
-        "opentracing",
-        "OpenTracing",
-        "NONE",
-        "NoNe",
-        "NOOP",
-        "null",
-        "",
-        " ",
-        " \t\r\n  "
-    })
-    @Test
+    public static Stream<Arguments> getTagStrategyFromName_returns_expected_strategies_for_known_short_names_DataProvider() {
+        return Stream.of(
+            Arguments.of("ZIPKIN"),
+            Arguments.of("Zipkin"),
+            Arguments.of("opentracing"),
+            Arguments.of("OpenTracing"),
+            Arguments.of("NONE"),
+            Arguments.of("NoNe"),
+            Arguments.of("NOOP"),
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of(""),
+            Arguments.of("\t\r\n")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getTagStrategyFromName_returns_expected_strategies_for_known_short_names_DataProvider")
     public void getTagStrategyFromName_returns_expected_strategies_for_known_short_names(
         String knownStrategyShortName
     ) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -362,11 +366,15 @@ public class RequestTracingFilterTest {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getTagStrategyFromName_returns_expected_strategy_for_fully_qualified_classname_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getTagStrategyFromName_returns_expected_strategy_for_fully_qualified_classname_DataProvider")
     public void getTagStrategyFromName_returns_expected_strategy_for_fully_qualified_classname(
         boolean useClassThatExists
     ) {
@@ -378,7 +386,7 @@ public class RequestTracingFilterTest {
 
         AtomicReference<HttpTagAndSpanNamingStrategy<HttpServletRequest, HttpServletResponse>> resultHolder =
             new AtomicReference<>();
-        
+
         // when
         Throwable ex = catchThrowable(() -> resultHolder.set(filter.getTagStrategyFromName(classname)));
 
@@ -395,11 +403,15 @@ public class RequestTracingFilterTest {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> initializeTagAndNamingAdapter_delegates_to_getTagAdapterFromName_and_returns_default_if_exception_is_thrown_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("initializeTagAndNamingAdapter_delegates_to_getTagAdapterFromName_and_returns_default_if_exception_is_thrown_DataProvider")
     public void initializeTagAndNamingAdapter_delegates_to_getTagAdapterFromName_and_returns_default_if_exception_is_thrown(
         boolean throwException
     ) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -441,13 +453,17 @@ public class RequestTracingFilterTest {
         }
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        " ",
-        " \t\r\n  "
-    })
-    @Test
+    public static Stream<Arguments> getTagAdapterFromName_returns_default_adapter_if_passed_null_or_blank_string_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of(""),
+            Arguments.of("\t\r\n")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getTagAdapterFromName_returns_default_adapter_if_passed_null_or_blank_string_DataProvider")
     public void getTagAdapterFromName_returns_default_adapter_if_passed_null_or_blank_string(
         String adapterName
     ) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -467,11 +483,15 @@ public class RequestTracingFilterTest {
         verify(filterSpy).getDefaultTagAdapter();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getTagAdapterFromName_returns_expected_strategy_for_fully_qualified_classname_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getTagAdapterFromName_returns_expected_strategy_for_fully_qualified_classname_DataProvider")
     public void getTagAdapterFromName_returns_expected_strategy_for_fully_qualified_classname(
         boolean useClassThatExists
     ) {
@@ -577,18 +597,22 @@ public class RequestTracingFilterTest {
 
     // VERIFY doFilter ===================================
 
-    @Test(expected = ServletException.class)
+    @Test
     public void doFilter_should_explode_if_request_is_not_HttpServletRequest() throws IOException, ServletException {
-        // expect
-        getBasicFilter().doFilter(mock(ServletRequest.class), mock(HttpServletResponse.class), mock(FilterChain.class));
-        fail("Expected ServletException but no exception was thrown");
+        assertThrows(ServletException.class, () -> {
+            // expect
+            getBasicFilter().doFilter(mock(ServletRequest.class), mock(HttpServletResponse.class), mock(FilterChain.class));
+            fail("Expected ServletException but no exception was thrown");
+        });
     }
 
-    @Test(expected = ServletException.class)
+    @Test
     public void doFilter_should_explode_if_response_is_not_HttpServletResponse() throws IOException, ServletException {
-        // expect
-        getBasicFilter().doFilter(mock(HttpServletRequest.class), mock(ServletResponse.class), mock(FilterChain.class));
-        fail("Expected ServletException but no exception was thrown");
+        assertThrows(ServletException.class, () -> {
+            // expect
+            getBasicFilter().doFilter(mock(HttpServletRequest.class), mock(ServletResponse.class), mock(FilterChain.class));
+            fail("Expected ServletException but no exception was thrown");
+        });
     }
 
     @Test
@@ -786,11 +810,15 @@ public class RequestTracingFilterTest {
         assertThat(responseTagsExecutedAtTimeOfFilterChain.get()).isFalse();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> doFilterInternal_should_complete_span_and_response_tags_even_if_filter_chain_explodes_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doFilterInternal_should_complete_span_and_response_tags_even_if_filter_chain_explodes_DataProvider")
     public void doFilterInternal_should_complete_span_and_response_tags_even_if_filter_chain_explodes(
         boolean isAsyncRequest
     ) throws ServletException, IOException {
@@ -991,11 +1019,15 @@ public class RequestTracingFilterTest {
         assertThat(newSpan.getUserId()).isEqualTo("testUserId");
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> doFilterInternal_should_use_getInitialSpanName_for_span_name_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doFilterInternal_should_use_getInitialSpanName_for_span_name_DataProvider")
     public void doFilterInternal_should_use_getInitialSpanName_for_span_name(
         boolean parentSpanExists
     ) throws ServletException, IOException {
@@ -1025,13 +1057,17 @@ public class RequestTracingFilterTest {
         verify(filterSpy).getInitialSpanName(requestMock, tagAndNamingStrategy, tagAndNamingAdapterMock);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> doFilterInternal_should_reset_tracing_info_to_whatever_was_on_the_thread_originally_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doFilterInternal_should_reset_tracing_info_to_whatever_was_on_the_thread_originally_DataProvider")
     public void doFilterInternal_should_reset_tracing_info_to_whatever_was_on_the_thread_originally(
         boolean isAsync, boolean throwExceptionInInnerFinallyBlock
     ) {
@@ -1155,18 +1191,19 @@ public class RequestTracingFilterTest {
 
     // VERIFY getInitialSpanName ========================
 
-    @DataProvider(value = {
-        // Name from strategy always wins
-        "someStrategyName   |   GET     |   /some/http/route    |   someStrategyName",
+    public static Stream<Arguments> getInitialSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("someStrategyName", "GET", "/some/http/route", "someStrategyName"),
+            Arguments.of(null, "GET", "/some/http/route", "GET /some/http/route"),
+            Arguments.of("", "GET", "/some/http/route", "GET /some/http/route"),
+            Arguments.of("[whitespace]", "GET", "/some/http/route", "GET /some/http/route"),
+            Arguments.of(null, null, "/some/http/route", "UNKNOWN_HTTP_METHOD /some/http/route"),
+            Arguments.of(null, null, null, "UNKNOWN_HTTP_METHOD")
+        );
+    }
 
-        // Null/blank name from strategy defers to HttpSpanFactory.getSpanName().
-        "null               |   GET     |   /some/http/route    |   GET /some/http/route",
-        "                   |   GET     |   /some/http/route    |   GET /some/http/route",
-        "[whitespace]       |   GET     |   /some/http/route    |   GET /some/http/route",
-        "null               |   null    |   /some/http/route    |   UNKNOWN_HTTP_METHOD /some/http/route",
-        "null               |   null    |   null                |   UNKNOWN_HTTP_METHOD"
-    }, splitBy = "\\|")
-    @Test
+    @ParameterizedTest
+    @MethodSource("getInitialSpanName_works_as_expected_DataProvider")
     public void getInitialSpanName_works_as_expected(
         String strategyResult, String httpMethod, String httpRoute, String expectedResult
     ) {
@@ -1226,11 +1263,15 @@ public class RequestTracingFilterTest {
 
     // VERIFY isAsyncRequest ==============================
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> isAsyncRequest_delegates_to_ServletRuntime_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isAsyncRequest_delegates_to_ServletRuntime_DataProvider")
     public void isAsyncRequest_delegates_to_ServletRuntime(boolean servletRuntimeResult) {
         // given
         RequestTracingFilter filterSpy = spy(getBasicFilter());
@@ -1273,11 +1314,15 @@ public class RequestTracingFilterTest {
 
     // VERIFY isAsyncDispatch ===========================
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> isAsyncDispatch_delegates_to_ServletRuntime_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isAsyncDispatch_delegates_to_ServletRuntime_DataProvider")
     @SuppressWarnings("deprecation")
     public void isAsyncDispatch_delegates_to_ServletRuntime(boolean servletRuntimeResult) {
         // given

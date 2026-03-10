@@ -1,13 +1,9 @@
 package com.nike.wingtips.tags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -15,36 +11,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of the default methods found in {@link HttpTagAndSpanNamingAdapter}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class HttpTagAndSpanNamingAdapterTest {
 
     private HttpTagAndSpanNamingAdapter<Object, Object> implSpy;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new BasicImpl());
     }
 
-    @DataProvider(value = {
-        "null   |   null",
-        "0      |   null",
-        "100    |   null",
-        "200    |   null",
-        "300    |   null",
-        "399    |   null",
-        "400    |   400",
-        "499    |   499",
-        "500    |   500",
-        "599    |   599",
-        "999    |   999",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getErrorResponseTagValue_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(null, null),
+            Arguments.of(0, null),
+            Arguments.of(100, null),
+            Arguments.of(200, null),
+            Arguments.of(300, null),
+            Arguments.of(399, null),
+            Arguments.of(400, "400"),
+            Arguments.of(499, "499"),
+            Arguments.of(500, "500"),
+            Arguments.of(599, "599"),
+            Arguments.of(999, "999")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getErrorResponseTagValue_works_as_expected_DataProvider")
     public void getErrorResponseTagValue_works_as_expected(Integer responseStatusCode, String expectedReturnVal) {
         // given
         doReturn(responseStatusCode).when(implSpy).getResponseHttpStatus(anyObject());
@@ -59,11 +62,15 @@ public class HttpTagAndSpanNamingAdapterTest {
         assertThat(resultForNullResponseObj).isEqualTo(expectedReturnVal);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> getSpanNamePrefix_returns_null_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSpanNamePrefix_returns_null_DataProvider")
     public void getSpanNamePrefix_returns_null(boolean passNullRequestObj) {
         // given
         Object requestObj = (passNullRequestObj) ? null : new Object();
@@ -75,37 +82,36 @@ public class HttpTagAndSpanNamingAdapterTest {
         assertThat(result).isNull();
     }
 
-    @DataProvider(value = {
-        "somePrefix |   someHttpMethod  |   some/path/template  |   null    |   somePrefix-someHttpMethod some/path/template",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   299     |   somePrefix-someHttpMethod some/path/template",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   300     |   somePrefix-someHttpMethod redirected",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   399     |   somePrefix-someHttpMethod redirected",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   400     |   somePrefix-someHttpMethod some/path/template",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   404     |   somePrefix-someHttpMethod not_found",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   499     |   somePrefix-someHttpMethod some/path/template",
-        "somePrefix |   someHttpMethod  |   some/path/template  |   500     |   somePrefix-someHttpMethod some/path/template",
+    public static Stream<Arguments> getInitialSpanName_and_getFinalSpanName_work_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", null, "somePrefix-someHttpMethod some/path/template"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 299, "somePrefix-someHttpMethod some/path/template"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 300, "somePrefix-someHttpMethod redirected"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 399, "somePrefix-someHttpMethod redirected"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 400, "somePrefix-someHttpMethod some/path/template"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 404, "somePrefix-someHttpMethod not_found"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 499, "somePrefix-someHttpMethod some/path/template"),
+            Arguments.of("somePrefix", "someHttpMethod", "some/path/template", 500, "somePrefix-someHttpMethod some/path/template"),
+            Arguments.of(null, "someHttpMethod", "some/path/template", null, "someHttpMethod some/path/template"),
+            Arguments.of(null, "someHttpMethod", "some/path/template", 300, "someHttpMethod redirected"),
+            Arguments.of(null, "someHttpMethod", "some/path/template", 404, "someHttpMethod not_found"),
+            Arguments.of("somePrefix", null, "some/path/template", null, "somePrefix-UNKNOWN_HTTP_METHOD some/path/template"),
+            Arguments.of("somePrefix", null, "some/path/template", 300, "somePrefix-UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of("somePrefix", null, "some/path/template", 404, "somePrefix-UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of(null, null, "some/path/template", null, "UNKNOWN_HTTP_METHOD some/path/template"),
+            Arguments.of(null, null, "some/path/template", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of(null, null, "some/path/template", 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of("somePrefix", "someHttpMethod", null, null, "somePrefix-someHttpMethod"),
+            Arguments.of("somePrefix", "someHttpMethod", null, 300, "somePrefix-someHttpMethod redirected"),
+            Arguments.of("somePrefix", "someHttpMethod", null, 404, "somePrefix-someHttpMethod not_found"),
+            Arguments.of(null, "someHttpMethod", null, null, "someHttpMethod"),
+            Arguments.of(null, "someHttpMethod", null, 300, "someHttpMethod redirected"),
+            Arguments.of(null, "someHttpMethod", null, 404, "someHttpMethod not_found")
+        );
+    }
 
-        "null       |   someHttpMethod  |   some/path/template  |   null    |   someHttpMethod some/path/template",
-        "null       |   someHttpMethod  |   some/path/template  |   300     |   someHttpMethod redirected",
-        "null       |   someHttpMethod  |   some/path/template  |   404     |   someHttpMethod not_found",
-
-        "somePrefix |   null            |   some/path/template  |   null    |   somePrefix-UNKNOWN_HTTP_METHOD some/path/template",
-        "somePrefix |   null            |   some/path/template  |   300     |   somePrefix-UNKNOWN_HTTP_METHOD redirected",
-        "somePrefix |   null            |   some/path/template  |   404     |   somePrefix-UNKNOWN_HTTP_METHOD not_found",
-
-        "null       |   null            |   some/path/template  |   null    |   UNKNOWN_HTTP_METHOD some/path/template",
-        "null       |   null            |   some/path/template  |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "null       |   null            |   some/path/template  |   404     |   UNKNOWN_HTTP_METHOD not_found",
-
-        "somePrefix |   someHttpMethod  |   null                |   null    |   somePrefix-someHttpMethod",
-        "somePrefix |   someHttpMethod  |   null                |   300     |   somePrefix-someHttpMethod redirected",
-        "somePrefix |   someHttpMethod  |   null                |   404     |   somePrefix-someHttpMethod not_found",
-
-        "null       |   someHttpMethod  |   null                |   null    |   someHttpMethod",
-        "null       |   someHttpMethod  |   null                |   300     |   someHttpMethod redirected",
-        "null       |   someHttpMethod  |   null                |   404     |   someHttpMethod not_found",
-    }, splitBy = "\\|")
-    @Test
+    @ParameterizedTest
+    @MethodSource("getInitialSpanName_and_getFinalSpanName_work_as_expected_DataProvider")
     public void getInitialSpanName_and_getFinalSpanName_work_as_expected(
         String prefix, String httpMethod, String pathTemplate, Integer responseStatusCode, String expectedResult
     ) {

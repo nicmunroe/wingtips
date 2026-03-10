@@ -6,13 +6,8 @@ import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.TraceHeaders;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -39,11 +34,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link HttpRequestTracingUtils}
  */
-@RunWith(DataProviderRunner.class)
 public class HttpRequestTracingUtilsTest {
 
     private String sampleTraceID = TraceAndSpanIdGenerator.generateId();
@@ -52,7 +50,7 @@ public class HttpRequestTracingUtilsTest {
     @SuppressWarnings("FieldCanBeLocal")
     private String userId = "userId";
     private RequestWithHeaders request;
-    
+
     private static final String USER_ID_HEADER_KEY = "userid";
     private static final String ALT_USER_ID_HEADER_KEY = "altuserid";
 
@@ -60,7 +58,7 @@ public class HttpRequestTracingUtilsTest {
 
     private HttpObjectForPropagation httpObjectForPropagationMock;
 
-    @Before
+    @BeforeEach
     public void onSetup() {
         request = mock(RequestWithHeaders.class);
         httpObjectForPropagationMock = mock(HttpObjectForPropagation.class);
@@ -169,8 +167,6 @@ public class HttpRequestTracingUtilsTest {
         // then
         assertThat(newSpan).isNull();
     }
-
-    @DataProvider
     public static Object[][] nullAndEmptyStrings() {
         return new Object[][] {
                 { null },
@@ -180,8 +176,8 @@ public class HttpRequestTracingUtilsTest {
         };
     }
 
-    @Test
-    @UseDataProvider("nullAndEmptyStrings")
+    @ParameterizedTest
+    @MethodSource("nullAndEmptyStrings")
     public void fromRequestWithHeaders_sets_span_name_to_unspecified_value_if_span_name_is_missing_or_empty(String nullOrEmptySpanName) {
         // given
         given(request.getHeader(TraceHeaders.TRACE_ID)).willReturn(UUID.randomUUID().toString());
@@ -218,8 +214,8 @@ public class HttpRequestTracingUtilsTest {
         }
     }
 
-    @Test
-    @UseDataProvider("nullAndEmptyStrings")
+    @ParameterizedTest
+    @MethodSource("nullAndEmptyStrings")
     public void fromRequestWithHeaders_sets_user_id_to_null_if_request_returns_null_or_empty_for_user_id(String nullOrEmptyUserId) {
         // given
         String traceId = UUID.randomUUID().toString();
@@ -235,8 +231,8 @@ public class HttpRequestTracingUtilsTest {
         assertThat(result.getUserId()).isNull();
     }
 
-    @Test
-    @UseDataProvider("nullAndEmptyStrings")
+    @ParameterizedTest
+    @MethodSource("nullAndEmptyStrings")
     public void fromRequestWithHeaders_sets_sampleable_to_true_if_sampled_header_is_null_or_missing_from_both_headers_and_attributes(String nullOrEmptySampledString) {
         // given: request where the request header and attribute for TRACE_SAMPLED returns null or empty string
         given(request.getHeader(TraceHeaders.TRACE_ID)).willReturn(sampleTraceID);
@@ -278,21 +274,25 @@ public class HttpRequestTracingUtilsTest {
         assertThat(newSpan.isSampleable()).isFalse();
     }
 
-    @DataProvider(value = {
-        "0      |   false",
-        "1      |   true",
-        "2      |   true",
-        "42     |   true",
-        "false  |   false",
-        "FALSE  |   false",
-        "FaLsE  |   false",
-        "true   |   true",
-        "TRUE   |   true",
-        "TrUe   |   true",
-        "true   |   true",
-        "bad    |   true",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> fromRequestWithHeaders_extracts_sampleable_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("0", false),
+            Arguments.of("1", true),
+            Arguments.of("2", true),
+            Arguments.of("42", true),
+            Arguments.of("false", false),
+            Arguments.of("FALSE", false),
+            Arguments.of("FaLsE", false),
+            Arguments.of("true", true),
+            Arguments.of("TRUE", true),
+            Arguments.of("TrUe", true),
+            Arguments.of("true", true),
+            Arguments.of("bad", true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromRequestWithHeaders_extracts_sampleable_as_expected_DataProvider")
     public void fromRequestWithHeaders_extracts_sampleable_as_expected(String receivedValue, boolean expectedSampleableResult) {
         // Verify via headers
         {
@@ -443,11 +443,15 @@ public class HttpRequestTracingUtilsTest {
         assertThat(firstSpan.getSpanId()).isNotEqualTo(secondSpan.getTraceId());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> convertSampleableBooleanToExpectedB3Value_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convertSampleableBooleanToExpectedB3Value_works_as_expected_DataProvider")
     public void convertSampleableBooleanToExpectedB3Value_works_as_expected(boolean sampleable) {
         // given
         String expectedResult = (sampleable) ? "1" : "0";
@@ -459,13 +463,17 @@ public class HttpRequestTracingUtilsTest {
         assertThat(result).isEqualTo(expectedResult);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_works_as_expected_DataProvider")
     public void propagateTracingHeaders_works_as_expected(
         boolean httpObjIsNull, boolean spanIsNull
     ) {
@@ -500,11 +508,16 @@ public class HttpRequestTracingUtilsTest {
     }
 
     // See https://github.com/openzipkin/b3-propagation - we should pass "1" if it's sampleable, "0" if it's not.
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+
+    public static Stream<Arguments> propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider")
     public void propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value(
         boolean sampleable
     ) {
@@ -521,11 +534,15 @@ public class HttpRequestTracingUtilsTest {
             .setHeader(TRACE_SAMPLED, convertSampleableBooleanToExpectedB3Value(span.isSampleable()));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider")
     public void propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists(
         boolean parentSpanIdExists
     ) {
@@ -547,43 +564,47 @@ public class HttpRequestTracingUtilsTest {
         }
     }
 
-    @DataProvider(value = {
-        "someHttpMethod |   /some/path/tmplt    |   null    |   someHttpMethod /some/path/tmplt",
-        "someHttpMethod |   /some/path/tmplt    |   299     |   someHttpMethod /some/path/tmplt",
-        "someHttpMethod |   /some/path/tmplt    |   300     |   someHttpMethod redirected",
-        "someHttpMethod |   /some/path/tmplt    |   399     |   someHttpMethod redirected",
-        "someHttpMethod |   /some/path/tmplt    |   400     |   someHttpMethod /some/path/tmplt",
-        "someHttpMethod |   /some/path/tmplt    |   404     |   someHttpMethod not_found",
-        "someHttpMethod |   /some/path/tmplt    |   500     |   someHttpMethod /some/path/tmplt",
-        "someHttpMethod |   null                |   null    |   someHttpMethod",
-        "someHttpMethod |   null                |   300     |   someHttpMethod redirected",
-        "someHttpMethod |   null                |   404     |   someHttpMethod not_found",
-        "someHttpMethod |                       |   null    |   someHttpMethod",
-        "someHttpMethod |                       |   300     |   someHttpMethod redirected",
-        "someHttpMethod |                       |   404     |   someHttpMethod not_found",
-        "someHttpMethod |   [whitespace]        |   null    |   someHttpMethod",
-        "someHttpMethod |   [whitespace]        |   300     |   someHttpMethod redirected",
-        "someHttpMethod |   [whitespace]        |   404     |   someHttpMethod not_found",
-        "null           |   /some/path/tmplt    |   null    |   UNKNOWN_HTTP_METHOD /some/path/tmplt",
-        "null           |   /some/path/tmplt    |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "null           |   /some/path/tmplt    |   404     |   UNKNOWN_HTTP_METHOD not_found",
-        "               |   /some/path/tmplt    |   null    |   UNKNOWN_HTTP_METHOD /some/path/tmplt",
-        "               |   /some/path/tmplt    |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "               |   /some/path/tmplt    |   404     |   UNKNOWN_HTTP_METHOD not_found",
-        "[whitespace]   |   /some/path/tmplt    |   null    |   UNKNOWN_HTTP_METHOD /some/path/tmplt",
-        "[whitespace]   |   /some/path/tmplt    |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "[whitespace]   |   /some/path/tmplt    |   404     |   UNKNOWN_HTTP_METHOD not_found",
-        "null           |   null                |   null    |   UNKNOWN_HTTP_METHOD",
-        "null           |   null                |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "null           |   null                |   404     |   UNKNOWN_HTTP_METHOD not_found",
-        "               |                       |   null    |   UNKNOWN_HTTP_METHOD",
-        "               |                       |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "               |                       |   404     |   UNKNOWN_HTTP_METHOD not_found",
-        "[whitespace]   |   [whitespace]        |   null    |   UNKNOWN_HTTP_METHOD",
-        "[whitespace]   |   [whitespace]        |   300     |   UNKNOWN_HTTP_METHOD redirected",
-        "[whitespace]   |   [whitespace]        |   404     |   UNKNOWN_HTTP_METHOD not_found"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> generateSafeSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("someHttpMethod", "/some/path/tmplt", null, "someHttpMethod /some/path/tmplt"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 299, "someHttpMethod /some/path/tmplt"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 300, "someHttpMethod redirected"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 399, "someHttpMethod redirected"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 400, "someHttpMethod /some/path/tmplt"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 404, "someHttpMethod not_found"),
+            Arguments.of("someHttpMethod", "/some/path/tmplt", 500, "someHttpMethod /some/path/tmplt"),
+            Arguments.of("someHttpMethod", null, null, "someHttpMethod"),
+            Arguments.of("someHttpMethod", null, 300, "someHttpMethod redirected"),
+            Arguments.of("someHttpMethod", null, 404, "someHttpMethod not_found"),
+            Arguments.of("someHttpMethod", "", null, "someHttpMethod"),
+            Arguments.of("someHttpMethod", "", 300, "someHttpMethod redirected"),
+            Arguments.of("someHttpMethod", "", 404, "someHttpMethod not_found"),
+            Arguments.of("someHttpMethod", "[whitespace]", null, "someHttpMethod"),
+            Arguments.of("someHttpMethod", "[whitespace]", 300, "someHttpMethod redirected"),
+            Arguments.of("someHttpMethod", "[whitespace]", 404, "someHttpMethod not_found"),
+            Arguments.of(null, "/some/path/tmplt", null, "UNKNOWN_HTTP_METHOD /some/path/tmplt"),
+            Arguments.of(null, "/some/path/tmplt", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of(null, "/some/path/tmplt", 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of("", "/some/path/tmplt", null, "UNKNOWN_HTTP_METHOD /some/path/tmplt"),
+            Arguments.of("", "/some/path/tmplt", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of("", "/some/path/tmplt", 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of("[whitespace]", "/some/path/tmplt", null, "UNKNOWN_HTTP_METHOD /some/path/tmplt"),
+            Arguments.of("[whitespace]", "/some/path/tmplt", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of("[whitespace]", "/some/path/tmplt", 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of(null, null, null, "UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, null, 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of(null, null, 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of("", "", null, "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("", "", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of("", "", 404, "UNKNOWN_HTTP_METHOD not_found"),
+            Arguments.of("[whitespace]", "[whitespace]", null, "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("[whitespace]", "[whitespace]", 300, "UNKNOWN_HTTP_METHOD redirected"),
+            Arguments.of("[whitespace]", "[whitespace]", 404, "UNKNOWN_HTTP_METHOD not_found")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("generateSafeSpanName_works_as_expected_DataProvider")
     public void generateSafeSpanName_works_as_expected(
         String httpMethod, String pathTemplate, Integer statusCode, String expectedResult
     ) {
@@ -636,19 +657,23 @@ public class HttpRequestTracingUtilsTest {
         verifyZeroInteractions(requestMock, responseMock);
     }
 
-    @DataProvider(value = {
-        "somePrefix     |   someHttpMethod  |   somePrefix-someHttpMethod",
-        "somePrefix     |   null            |   somePrefix-UNKNOWN_HTTP_METHOD",
-        "somePrefix     |                   |   somePrefix-UNKNOWN_HTTP_METHOD",
-        "somePrefix     |   [whitespace]    |   somePrefix-UNKNOWN_HTTP_METHOD",
-        "null           |   someHttpMethod  |   someHttpMethod",
-        "               |   someHttpMethod  |   someHttpMethod",
-        "[whitespace]   |   someHttpMethod  |   someHttpMethod",
-        "null           |   null            |   UNKNOWN_HTTP_METHOD",
-        "               |                   |   UNKNOWN_HTTP_METHOD",
-        "[whitespace]   |   [whitespace]    |   UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getFallbackSpanNameForHttpRequest_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("somePrefix", "someHttpMethod", "somePrefix-someHttpMethod"),
+            Arguments.of("somePrefix", null, "somePrefix-UNKNOWN_HTTP_METHOD"),
+            Arguments.of("somePrefix", "", "somePrefix-UNKNOWN_HTTP_METHOD"),
+            Arguments.of("somePrefix", "[whitespace]", "somePrefix-UNKNOWN_HTTP_METHOD"),
+            Arguments.of(null, "someHttpMethod", "someHttpMethod"),
+            Arguments.of("", "someHttpMethod", "someHttpMethod"),
+            Arguments.of("[whitespace]", "someHttpMethod", "someHttpMethod"),
+            Arguments.of(null, null, "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("", "", "UNKNOWN_HTTP_METHOD"),
+            Arguments.of("[whitespace]", "[whitespace]", "UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getFallbackSpanNameForHttpRequest_works_as_expected_DataProvider")
     public void getFallbackSpanNameForHttpRequest_works_as_expected(
         String prefix, String httpMethod, String expectedResult
     ) {

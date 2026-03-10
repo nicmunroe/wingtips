@@ -2,8 +2,8 @@ package com.nike.wingtips.spring.util;
 
 import com.nike.internal.util.MapBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
@@ -33,7 +33,7 @@ public class HttpRequestWrapperWithModifiableHeadersTest {
     private URI uri;
     private HttpMethod method;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         uri = URI.create("http://localhost:4242/" + UUID.randomUUID().toString());
         method = HttpMethod.PATCH;

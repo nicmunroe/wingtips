@@ -1,11 +1,7 @@
 package com.nike.wingtips;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.assertj.core.api.ThrowableAssert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -23,11 +19,15 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link TraceAndSpanIdGenerator}
  */
-@RunWith(DataProviderRunner.class)
 public class TraceAndSpanIdGeneratorTest {
 
     @Test
@@ -129,20 +129,24 @@ public class TraceAndSpanIdGeneratorTest {
         assertThat(returnVal).isEqualTo(EXPECTED_LONG_VALUE);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void convertBytesToLong_should_explode_if_byte_array_is_less_than_8_bytes() {
-        byte[] badByteArray = new byte[]{0, 0, 0, 0, 0, 0, 1};
-        assertThat(badByteArray.length).isLessThan(8);
-        TraceAndSpanIdGenerator.convertBytesToLong(badByteArray);
-        fail("Expected IllegalArgumentException but none was thrown");
+        assertThrows(IllegalArgumentException.class, () -> {
+            byte[] badByteArray = new byte[]{0, 0, 0, 0, 0, 0, 1};
+            assertThat(badByteArray.length).isLessThan(8);
+            TraceAndSpanIdGenerator.convertBytesToLong(badByteArray);
+            fail("Expected IllegalArgumentException but none was thrown");
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void convertBytesToLong_should_explode_if_byte_array_is_more_than_8_bytes() {
-        byte[] badByteArray = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 1};
-        assertThat(badByteArray.length).isGreaterThan(8);
-        TraceAndSpanIdGenerator.convertBytesToLong(badByteArray);
-        fail("Expected IllegalArgumentException but none was thrown");
+        assertThrows(IllegalArgumentException.class, () -> {
+            byte[] badByteArray = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 1};
+            assertThat(badByteArray.length).isGreaterThan(8);
+            TraceAndSpanIdGenerator.convertBytesToLong(badByteArray);
+            fail("Expected IllegalArgumentException but none was thrown");
+        });
     }
 
     @Test
@@ -203,19 +207,23 @@ public class TraceAndSpanIdGeneratorTest {
         assertThat(randomLongs.size()).isEqualTo(numAttempts);
     }
 
-    @DataProvider(value = {
-        "0000000000000000   |   0",
-        "0000000000000001   |   1",
-        "ffffffffffffffff   |   18446744073709551615",
-        "fffffffffffffffe   |   18446744073709551614",
-        "7fae59489091369a   |   9200389256962455194",
-        "eb5e7aaefeb92b4f   |   16960128138740312911",
-        "d2153abe4c047408   |   15138070311469347848",
-        "9041ee0d07d6c72c   |   10394851154681317164",
-        "6470a5ce0e9262f4   |   7237466905610707700",
-        "000003c8a251fb93   |   4160251624339",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> longToUnsignedLowerHexString_and_unsignedLowerHexStringToLong_work_as_expected_for_known_values_DataProvider() {
+        return Stream.of(
+            Arguments.of("0000000000000000", "0"),
+            Arguments.of("0000000000000001", "1"),
+            Arguments.of("ffffffffffffffff", "18446744073709551615"),
+            Arguments.of("fffffffffffffffe", "18446744073709551614"),
+            Arguments.of("7fae59489091369a", "9200389256962455194"),
+            Arguments.of("eb5e7aaefeb92b4f", "16960128138740312911"),
+            Arguments.of("d2153abe4c047408", "15138070311469347848"),
+            Arguments.of("9041ee0d07d6c72c", "10394851154681317164"),
+            Arguments.of("6470a5ce0e9262f4", "7237466905610707700"),
+            Arguments.of("000003c8a251fb93", "4160251624339")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("longToUnsignedLowerHexString_and_unsignedLowerHexStringToLong_work_as_expected_for_known_values_DataProvider")
     public void longToUnsignedLowerHexString_and_unsignedLowerHexStringToLong_work_as_expected_for_known_values(String actualHexValue, String actualUnsignedDecimalValue) {
         // given
         long actualSignedPrimitive = new BigInteger(actualUnsignedDecimalValue).longValue();
@@ -229,16 +237,20 @@ public class TraceAndSpanIdGeneratorTest {
         assertThat(calculatedPrimitiveValue).isEqualTo(actualSignedPrimitive);
     }
 
-    @DataProvider(value = {
-        "                                      ", // less than 16 chars
-        "123e4567-e89b-12d3-a456-426655440000  ", // UUID format (hyphens and also >32 chars)
-        "/                                     ", // before '0' char
-        ":                                     ", // after '9' char
-        "`                                     ", // before 'a' char
-        "g                                     ", // after 'f' char
-        "ABCDEF                                "  // uppercase hex chars
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unsignedLowerHexStringToLong_throws_NumberFormatException_for_illegal_args_DataProvider() {
+        return Stream.of(
+            Arguments.of(""),
+            Arguments.of("123e4567-e89b-12d3-a456-426655440000"),
+            Arguments.of("/"),
+            Arguments.of(":"),
+            Arguments.of("`"),
+            Arguments.of("g"),
+            Arguments.of("ABCDEF")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unsignedLowerHexStringToLong_throws_NumberFormatException_for_illegal_args_DataProvider")
     public void unsignedLowerHexStringToLong_throws_NumberFormatException_for_illegal_args(final String badHexString) {
         // when selecting right-most 16 characters
         Throwable ex = catchThrowable(new ThrowableAssert.ThrowingCallable() {

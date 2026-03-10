@@ -12,17 +12,13 @@ import com.nike.wingtips.servlet.RequestTracingFilter;
 import com.nike.wingtips.tags.KnownZipkinTags;
 import com.nike.wingtips.tags.WingtipsTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -48,21 +44,24 @@ import io.restassured.response.ExtractableResponse;
 import static com.nike.wingtips.http.HttpRequestTracingUtils.CHILD_OF_SPAN_FROM_HEADERS_WHERE_CALLER_DID_NOT_SEND_SPAN_ID_TAG_KEY;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Component test to verify that {@link RequestTracingFilter} works as expected when deployed to a real running server.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class RequestTracingFilterComponentTest {
 
     private static int port;
     private static Server server;
-    
+
     private SpanRecorder spanRecorder;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         port = findFreePort();
         server = new Server(port);
@@ -71,7 +70,7 @@ public class RequestTracingFilterComponentTest {
         server.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         if (server != null) {
             server.stop();
@@ -79,7 +78,7 @@ public class RequestTracingFilterComponentTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         clearTracerSpanLifecycleListeners();
 
@@ -87,7 +86,7 @@ public class RequestTracingFilterComponentTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         clearTracerSpanLifecycleListeners();
     }
@@ -96,11 +95,15 @@ public class RequestTracingFilterComponentTest {
         Tracer.getInstance().removeAllSpanLifecycleListeners();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_blocking_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_endpoint_traced_correctly_DataProvider")
     public void verify_blocking_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -136,11 +139,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_endpoint_traced_correctly_DataProvider")
     public void verify_async_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -176,11 +183,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_blocking_forward_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_forward_endpoint_traced_correctly_DataProvider")
     public void verify_blocking_forward_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -216,11 +227,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_forward_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_forward_endpoint_traced_correctly_DataProvider")
     public void verify_async_forward_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -256,11 +271,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_timeout_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_timeout_endpoint_traced_correctly_DataProvider")
     public void verify_async_timeout_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -296,11 +315,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_async_error_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_async_error_endpoint_traced_correctly_DataProvider")
     public void verify_async_error_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -335,11 +358,15 @@ public class RequestTracingFilterComponentTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> verify_wildcard_endpoint_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_wildcard_endpoint_traced_correctly_DataProvider")
     public void verify_wildcard_endpoint_traced_correctly(boolean upstreamSendsSpan) {
         Pair<Span, Map<String, String>> upstreamSpanInfo =
             (upstreamSendsSpan)
@@ -546,18 +573,18 @@ public class RequestTracingFilterComponentTest {
 
     private static final String ASYNC_PATH = "/async";
     private static final String ASYNC_RESULT = "async endpoint hit - " + UUID.randomUUID().toString();
-    
+
     private static final String BLOCKING_FORWARD_PATH = "/blockingForward";
     private static final String ASYNC_FORWARD_PATH = "/asyncForward";
     private static final String ASYNC_TIMEOUT_PATH = "/asyncTimeout";
     private static final String ASYNC_ERROR_PATH = "/asyncError";
-    
+
     private static final String WILDCARD_PATH_PREFIX = "/wildcard";
     private static final String WILDCARD_PATH_TEMPLATE = WILDCARD_PATH_PREFIX + "/*";
     private static final String WILDCARD_RESULT = "wildcard endpoint hit - " + UUID.randomUUID().toString();
 
     private static final int SLEEP_TIME_MILLIS = 50;
-    
+
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     public static class BlockingServlet extends HttpServlet {

@@ -1,7 +1,7 @@
 package com.nike.wingtips.tags;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ public class NoOpHttpTagAdapterTest {
     private Object requestMock;
     private Object responseMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new NoOpHttpTagAdapter<>());
         requestMock = mock(Object.class);

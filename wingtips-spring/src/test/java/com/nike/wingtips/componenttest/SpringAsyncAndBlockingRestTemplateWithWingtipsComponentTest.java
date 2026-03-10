@@ -14,16 +14,12 @@ import com.nike.wingtips.tags.KnownZipkinTags;
 import com.nike.wingtips.tags.WingtipsTags;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -56,6 +52,10 @@ import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplate
 import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest.TestBackendServer.ENDPOINT_PAYLOAD;
 import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest.TestBackendServer.SLEEP_TIME_MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Component test validating Wingtips' integration with Spring {@link RestTemplate} and {@link AsyncRestTemplate}.
@@ -67,7 +67,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
 
     private static final int SERVER_PORT = findFreePort();
@@ -75,12 +74,12 @@ public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
 
     private SpanRecorder spanRecorder;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         serverAppContext = SpringApplication.run(TestBackendServer.class, "--server.port=" + SERVER_PORT);
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         SpringApplication.exit(serverAppContext);
     }
@@ -94,7 +93,7 @@ public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
         }
     }
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
 
@@ -102,7 +101,7 @@ public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -113,13 +112,17 @@ public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
         Tracer.getInstance().removeAllSpanLifecycleListeners();
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_blocking_RestTemplate_with_Wingtips_interceptor_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_blocking_RestTemplate_with_Wingtips_interceptor_traced_correctly_DataProvider")
     public void verify_blocking_RestTemplate_with_Wingtips_interceptor_traced_correctly(
         boolean spanAlreadyExistsBeforeCall, boolean subspanOptionOn
     ) {
@@ -211,13 +214,17 @@ public class SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest {
         assertThat(span.getTags().get(WingtipsTags.SPAN_HANDLER)).isEqualTo(expectedSpanHandlerTagValue);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> verify_AsyncRestTemplate_with_Wingtips_interceptor_traced_correctly_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("verify_AsyncRestTemplate_with_Wingtips_interceptor_traced_correctly_DataProvider")
     public void verify_AsyncRestTemplate_with_Wingtips_interceptor_traced_correctly(
         boolean spanAlreadyExistsBeforeCall, boolean subspanOptionOn
     ) throws ExecutionException, InterruptedException {

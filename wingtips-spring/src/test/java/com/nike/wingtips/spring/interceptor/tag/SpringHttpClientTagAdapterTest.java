@@ -1,11 +1,7 @@
 package com.nike.wingtips.spring.interceptor.tag;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
@@ -25,20 +21,23 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link SpringHttpClientTagAdapter}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class SpringHttpClientTagAdapterTest {
 
     private SpringHttpClientTagAdapter implSpy;
     private HttpRequest requestMock;
     private ClientHttpResponse responseMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new SpringHttpClientTagAdapter());
         requestMock = mock(HttpRequest.class);
@@ -71,14 +70,18 @@ public class SpringHttpClientTagAdapterTest {
         assertThat(implSpy.getRequestUrl(null)).isNull();
     }
 
-    @DataProvider(value = {
-        "200",
-        "300",
-        "400",
-        "500",
-        "999"
-    })
-    @Test
+    public static Stream<Arguments> getResponseHttpStatus_returns_value_from_response_getRawStatusCode_DataProvider() {
+        return Stream.of(
+            Arguments.of(200),
+            Arguments.of(300),
+            Arguments.of(400),
+            Arguments.of(500),
+            Arguments.of(999)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getResponseHttpStatus_returns_value_from_response_getRawStatusCode_DataProvider")
     public void getResponseHttpStatus_returns_value_from_response_getRawStatusCode(
         int responseMethodValue
     ) throws IOException {
@@ -113,18 +116,22 @@ public class SpringHttpClientTagAdapterTest {
         verify(responseMock).getRawStatusCode();
     }
 
-    @DataProvider(value = {
-        "GET        |   GET",
-        "HEAD       |   HEAD",
-        "POST       |   POST",
-        "PUT        |   PUT",
-        "PATCH      |   PATCH",
-        "DELETE     |   DELETE", 
-        "OPTIONS    |   OPTIONS",
-        "TRACE      |   TRACE",
-        "null       |   UNKNOWN_HTTP_METHOD"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestHttpMethod_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(HttpMethod.GET, "GET"),
+            Arguments.of(HttpMethod.HEAD, "HEAD"),
+            Arguments.of(HttpMethod.POST, "POST"),
+            Arguments.of(HttpMethod.PUT, "PUT"),
+            Arguments.of(HttpMethod.PATCH, "PATCH"),
+            Arguments.of(HttpMethod.DELETE, "DELETE"),
+            Arguments.of(HttpMethod.OPTIONS, "OPTIONS"),
+            Arguments.of(HttpMethod.TRACE, "TRACE"),
+            Arguments.of(null, "UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestHttpMethod_works_as_expected_DataProvider")
     public void getRequestHttpMethod_works_as_expected(HttpMethod httpMethod, String expectedResult) {
         // given
         doReturn(httpMethod).when(requestMock).getMethod();
@@ -221,11 +228,15 @@ public class SpringHttpClientTagAdapterTest {
         assertThat(implSpy.getHeaderMultipleValue(null, "foo")).isNull();
     }
 
-    @DataProvider(value = {
-        "true   |   spring.asyncresttemplate",
-        "false  |   spring.resttemplate"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSpanHandlerTagValue_works_as_expected_when_request_is_not_an_HttpRequestWrapper_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, "spring.asyncresttemplate"),
+            Arguments.of(false, "spring.resttemplate")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSpanHandlerTagValue_works_as_expected_when_request_is_not_an_HttpRequestWrapper_DataProvider")
     public void getSpanHandlerTagValue_works_as_expected_when_request_is_not_an_HttpRequestWrapper(
         boolean requestIsAsyncClientHttpRequest, String expectedResult
     ) {
@@ -241,11 +252,15 @@ public class SpringHttpClientTagAdapterTest {
         assertThat(result).isEqualTo(expectedResult);
     }
 
-    @DataProvider(value = {
-        "true   |   spring.asyncresttemplate",
-        "false  |   spring.resttemplate"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getSpanHandlerTagValue_works_as_expected_when_request_is_an_HttpRequestWrapper_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, "spring.asyncresttemplate"),
+            Arguments.of(false, "spring.resttemplate")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSpanHandlerTagValue_works_as_expected_when_request_is_an_HttpRequestWrapper_DataProvider")
     public void getSpanHandlerTagValue_works_as_expected_when_request_is_an_HttpRequestWrapper(
         boolean wrappedRequestIsAsyncClientHttpRequest, String expectedResult
     ) {

@@ -5,12 +5,9 @@ import com.nike.wingtips.Tracer;
 import com.nike.wingtips.util.TracingState;
 import com.nike.wingtips.util.asynchelperwrapper.ExecutorServiceWithTracing;
 
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.Arrays;
@@ -33,7 +30,6 @@ import static org.assertj.core.api.Assertions.fail;
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ExecutorServiceWithTracingComponentTest {
 
     private ExecutorServiceWithTracing instance;
@@ -41,7 +37,7 @@ public class ExecutorServiceWithTracingComponentTest {
     private List<TracingState> capturedTracingStates;
     private List<Long> capturedThreadIds;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         instance = new ExecutorServiceWithTracing(Executors.newCachedThreadPool());
 
@@ -51,7 +47,7 @@ public class ExecutorServiceWithTracingComponentTest {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -169,7 +165,7 @@ public class ExecutorServiceWithTracingComponentTest {
                                        .collect(Collectors.toList());
 
         Thread.sleep(100);
-        
+
         // then
         assertThat(results).isEqualTo(Arrays.asList(callableResult1, callableResult2));
         verifyExpectedCapturedTracingStates(expectedTracingState, expectedTracingState);
@@ -226,7 +222,7 @@ public class ExecutorServiceWithTracingComponentTest {
         String result = instance.invokeAny(origTasks);
 
         Thread.sleep(500);
-        
+
         // then
         assertThat(Arrays.asList(callableResult1, callableResult2)).contains(result);
         if (capturedTracingStates.size() == 1) {

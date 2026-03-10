@@ -1,6 +1,6 @@
 package com.nike.wingtips;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
  * @author Nic Munroe
  */
 public class SpanMutatorTest {
-    
+
     @Test
     public void changeSpanName_works_as_expected() {
         // given

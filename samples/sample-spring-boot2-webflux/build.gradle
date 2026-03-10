@@ -26,11 +26,10 @@ dependencies {
         "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testImplementation(
-        "junit:junit:$junitVersion",
+        "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
         "org.mockito:mockito-core:$mockitoVersion",
         "ch.qos.logback:logback-classic:$logbackVersion",
         "org.assertj:assertj-core:$assertJVersion",
-        "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
         "io.rest-assured:rest-assured:$restAssuredVersion",
         // Thanks Springboot BOM! :/
         // https://stackoverflow.com/questions/44993615/java-lang-noclassdeffounderror-io-restassured-mapper-factory-gsonobjectmapperfa

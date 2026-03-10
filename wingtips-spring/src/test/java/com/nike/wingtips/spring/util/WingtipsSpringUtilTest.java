@@ -15,13 +15,9 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 import com.nike.wingtips.testutil.Whitebox;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMessage;
@@ -56,13 +52,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsSpringUtil}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsSpringUtilTest {
 
     private HttpMessage httpMessageMock;
@@ -75,7 +74,7 @@ public class WingtipsSpringUtilTest {
     private HttpTagAndSpanNamingStrategy<HttpRequest, ClientHttpResponse> tagStrategyMock;
     private HttpTagAndSpanNamingAdapter<HttpRequest, ClientHttpResponse> tagAdapterMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         resetTracing();
 
@@ -91,7 +90,7 @@ public class WingtipsSpringUtilTest {
         tagAdapterMock = mock(HttpTagAndSpanNamingAdapter.class);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -133,11 +132,15 @@ public class WingtipsSpringUtilTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledRestTemplate_single_arg_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledRestTemplate_single_arg_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider")
     public void createTracingEnabledRestTemplate_single_arg_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields(
         boolean subspanOptionOn
     ) {
@@ -155,11 +158,15 @@ public class WingtipsSpringUtilTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledRestTemplate_with_tag_and_span_naming_args_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledRestTemplate_with_tag_and_span_naming_args_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider")
     public void createTracingEnabledRestTemplate_with_tag_and_span_naming_args_returns_RestTemplate_with_wingtips_interceptor_added_with_expected_fields(
         boolean subspanOptionOn
     ) {
@@ -206,11 +213,15 @@ public class WingtipsSpringUtilTest {
         }
     }
 
-    @DataProvider(value = {
-        "NULL_STRATEGY_ARG",
-        "NULL_ADAPTER_ARG"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullConstructorArgsScenario.NULL_STRATEGY_ARG),
+            Arguments.of(NullConstructorArgsScenario.NULL_ADAPTER_ARG)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider")
     public void createTracingEnabledRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args(
         NullConstructorArgsScenario scenario
     ) {
@@ -241,11 +252,15 @@ public class WingtipsSpringUtilTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledAsyncRestTemplate_single_arg_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledAsyncRestTemplate_single_arg_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider")
     public void createTracingEnabledAsyncRestTemplate_single_arg_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields(
         boolean subspanOptionOn
     ) {
@@ -263,11 +278,15 @@ public class WingtipsSpringUtilTest {
         );
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields_DataProvider")
     public void createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_returns_AsyncRestTemplate_with_wingtips_interceptor_added_with_expected_fields(
         boolean subspanOptionOn
     ) {
@@ -287,11 +306,15 @@ public class WingtipsSpringUtilTest {
         );
     }
 
-    @DataProvider(value = {
-        "NULL_STRATEGY_ARG",
-        "NULL_ADAPTER_ARG"
-    })
-    @Test
+    public static Stream<Arguments> createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullConstructorArgsScenario.NULL_STRATEGY_ARG),
+            Arguments.of(NullConstructorArgsScenario.NULL_ADAPTER_ARG)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args_DataProvider")
     public void createTracingEnabledAsyncRestTemplate_with_tag_and_span_naming_args_throws_IllegalArgumentException_if_passed_null_args(
         NullConstructorArgsScenario scenario
     ) {
@@ -306,13 +329,17 @@ public class WingtipsSpringUtilTest {
             .hasMessage(scenario.expectedExceptionMessage);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_works_as_expected_DataProvider")
     public void propagateTracingHeaders_works_as_expected(
         boolean httpMessageIsNull, boolean spanIsNull
     ) {
@@ -342,11 +369,16 @@ public class WingtipsSpringUtilTest {
     }
 
     // See https://github.com/openzipkin/b3-propagation - we should pass "1" if it's sampleable, "0" if it's not.
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+
+    public static Stream<Arguments> propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider")
     public void propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value(
         boolean sampleable
     ) {
@@ -362,11 +394,15 @@ public class WingtipsSpringUtilTest {
         verify(headersMock).set(TRACE_SAMPLED, convertSampleableBooleanToExpectedB3Value(span.isSampleable()));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider")
     public void propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists(
         boolean parentSpanIdExists
     ) {
@@ -388,18 +424,22 @@ public class WingtipsSpringUtilTest {
         }
     }
 
-    @DataProvider(value = {
-        "GET",
-        "HEAD",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "OPTIONS",
-        "TRACE",
-        "null"
-    })
-    @Test
+    public static Stream<Arguments> getRequestMethodAsString_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(HttpMethod.GET),
+            Arguments.of(HttpMethod.HEAD),
+            Arguments.of(HttpMethod.POST),
+            Arguments.of(HttpMethod.PUT),
+            Arguments.of(HttpMethod.PATCH),
+            Arguments.of(HttpMethod.DELETE),
+            Arguments.of(HttpMethod.OPTIONS),
+            Arguments.of(HttpMethod.TRACE),
+            Arguments.of((Object) null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestMethodAsString_works_as_expected_DataProvider")
     public void getRequestMethodAsString_works_as_expected(
         HttpMethod method
     ) {
@@ -433,7 +473,7 @@ public class WingtipsSpringUtilTest {
         Tracer.getInstance().startRequestWithRootSpan("request-" + UUID.randomUUID().toString());
         return Pair.of(Tracer.getInstance().getCurrentSpanStackCopy(), MDC.getCopyOfContextMap());
     }
-    
+
     private void verifySuccessCallbackWithTracing(SuccessCallback result,
                                                   SuccessCallback expectedCoreInstance,
                                                   Deque<Span> expectedSpanStack,

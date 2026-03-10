@@ -4,13 +4,9 @@ import com.nike.internal.util.Pair;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Tracer;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
@@ -26,13 +22,16 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ListenableFutureCallbackWithTracing}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ListenableFutureCallbackWithTracingTest {
 
     private ListenableFutureCallback listenableFutureCallbackMock;
@@ -42,7 +41,7 @@ public class ListenableFutureCallbackWithTracingTest {
     Object successInObj;
     Throwable failureInObj;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         listenableFutureCallbackMock = mock(ListenableFutureCallback.class);
 
@@ -69,7 +68,7 @@ public class ListenableFutureCallbackWithTracingTest {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -79,11 +78,15 @@ public class ListenableFutureCallbackWithTracingTest {
         Tracer.getInstance().unregisterFromThread();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> current_thread_info_constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("current_thread_info_constructor_sets_fields_as_expected_DataProvider")
     public void current_thread_info_constructor_sets_fields_as_expected(boolean useStaticFactory) {
         // given
         Tracer.getInstance().startRequestWithRootSpan("request-" + UUID.randomUUID().toString());
@@ -101,17 +104,21 @@ public class ListenableFutureCallbackWithTracingTest {
         assertThat(instance.mdcContextMapForExecution).isEqualTo(mdcInfoMock);
     }
 
-    @DataProvider(value = {
-        "true   |   true    |   true",
-        "true   |   false   |   true",
-        "false  |   true    |   true",
-        "false  |   false   |   true",
-        "true   |   true    |   false",
-        "true   |   false   |   false",
-        "false  |   true    |   false",
-        "false  |   false   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> pair_constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, true),
+            Arguments.of(true, false, true),
+            Arguments.of(false, true, true),
+            Arguments.of(false, false, true),
+            Arguments.of(true, true, false),
+            Arguments.of(true, false, false),
+            Arguments.of(false, true, false),
+            Arguments.of(false, false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("pair_constructor_sets_fields_as_expected_DataProvider")
     public void pair_constructor_sets_fields_as_expected(
         boolean nullSpanStack, boolean nullMdcInfo, boolean useStaticFactory
     ) {
@@ -131,11 +138,15 @@ public class ListenableFutureCallbackWithTracingTest {
         assertThat(instance.mdcContextMapForExecution).isEqualTo(mdcInfoMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> pair_constructor_sets_fields_as_expected_when_pair_is_null_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("pair_constructor_sets_fields_as_expected_when_pair_is_null_DataProvider")
     public void pair_constructor_sets_fields_as_expected_when_pair_is_null(boolean useStaticFactory) {
         // when
         ListenableFutureCallbackWithTracing instance = (useStaticFactory)
@@ -148,11 +159,15 @@ public class ListenableFutureCallbackWithTracingTest {
         assertThat(instance.mdcContextMapForExecution).isNull();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> kitchen_sink_constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("kitchen_sink_constructor_sets_fields_as_expected_DataProvider")
     public void kitchen_sink_constructor_sets_fields_as_expected(boolean useStaticFactory) {
         // given
         Deque<Span> spanStackMock = mock(Deque.class);
@@ -197,11 +212,15 @@ public class ListenableFutureCallbackWithTracingTest {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> onSuccess_handles_tracing_and_mdc_info_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("onSuccess_handles_tracing_and_mdc_info_as_expected_DataProvider")
     public void onSuccess_handles_tracing_and_mdc_info_as_expected(boolean throwException) {
         // given
         throwExceptionDuringCall = throwException;
@@ -234,11 +253,15 @@ public class ListenableFutureCallbackWithTracingTest {
         assertThat(MDC.getCopyOfContextMap()).isNullOrEmpty();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> onFailure_handles_tracing_and_mdc_info_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("onFailure_handles_tracing_and_mdc_info_as_expected_DataProvider")
     public void onFailure_handles_tracing_and_mdc_info_as_expected(boolean throwException) {
         // given
         throwExceptionDuringCall = throwException;

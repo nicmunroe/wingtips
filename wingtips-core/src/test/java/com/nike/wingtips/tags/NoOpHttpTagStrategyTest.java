@@ -2,8 +2,8 @@ package com.nike.wingtips.tags;
 
 import com.nike.wingtips.Span;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -26,7 +26,7 @@ public class NoOpHttpTagStrategyTest {
     private Throwable errorMock;
     private HttpTagAndSpanNamingAdapter<Object, Object> adapterMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new NoOpHttpTagStrategy<>());
 

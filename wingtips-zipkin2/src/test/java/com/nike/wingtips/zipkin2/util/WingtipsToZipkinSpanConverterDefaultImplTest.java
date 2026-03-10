@@ -6,12 +6,7 @@ import com.nike.wingtips.Span.TimestampedAnnotation;
 import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.testutil.Whitebox;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -31,13 +26,16 @@ import zipkin2.Endpoint;
 import static com.nike.wingtips.TraceAndSpanIdGenerator.generateId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsToZipkinSpanConverterDefaultImpl}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsToZipkinSpanConverterDefaultImplTest {
 
     private WingtipsToZipkinSpanConverterDefaultImpl impl = new WingtipsToZipkinSpanConverterDefaultImpl();
@@ -52,11 +50,15 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         assertThat(impl.enableIdSanitization).isFalse();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> constructor_with_args_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_args_sets_fields_as_expected_DataProvider")
     public void constructor_with_args_sets_fields_as_expected(boolean enableSanitization) {
         // given
         impl = new WingtipsToZipkinSpanConverterDefaultImpl(enableSanitization);
@@ -87,13 +89,17 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         }
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_non_null_info_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_non_null_info_DataProvider")
     public void convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_non_null_info(SpanPurpose spanPurpose) {
         // given
         String spanName = UUID.randomUUID().toString();
@@ -140,7 +146,7 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         singleValue.put("tagName", "tagValue");
         return singleValue;
     }
-    
+
     protected Map<String,String> createMultipleTagMap() {
         Map<String,String> multipleValues = createSingleTagMap();
         multipleValues.put("secondTag", "secondValue");
@@ -158,14 +164,18 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         multipleAnnotationList.add(TimestampedAnnotation.forEpochMicros(67890, "annotationTwoValue"));
         return multipleAnnotationList;
     }
-    
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN"
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_nullable_info_DataProvider() {
+        return Stream.of(
+            Arguments.of(SpanPurpose.SERVER),
+            Arguments.of(SpanPurpose.CLIENT),
+            Arguments.of(SpanPurpose.LOCAL_ONLY),
+            Arguments.of(SpanPurpose.UNKNOWN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_nullable_info_DataProvider")
     public void convertWingtipsSpanToZipkinSpan_works_as_expected_for_all_nullable_info(SpanPurpose spanPurpose) {
         // given
         // Not a lot that can really be null - just parent span ID
@@ -242,12 +252,15 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         // then
         assertThat(zipkinSpan.traceId()).isEqualTo(traceId128Bits);
     }
-    
-    @DataProvider(value = {
-            "   \t\n\r   ",
-            ""
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> convertWingtipsSpanToZipkinSpan_throws_IllegalArgumentException_when_passed_wingtipsSpan_with_empty_traceId_format_DataProvider() {
+        return Stream.of(
+            Arguments.of("")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("convertWingtipsSpanToZipkinSpan_throws_IllegalArgumentException_when_passed_wingtipsSpan_with_empty_traceId_format_DataProvider")
     @SuppressWarnings("UnnecessaryLocalVariable")
     public void convertWingtipsSpanToZipkinSpan_throws_IllegalArgumentException_when_passed_wingtipsSpan_with_empty_traceId_format(
         final String emptyString
@@ -343,17 +356,14 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
             this.expectedSanitizedResultForSpanIdOrParentSpanId = expectedSanitizedResultForSpanIdOrParentSpanId;
         }
     }
-
-    @DataProvider
     @SuppressWarnings("unused")
-    public static List<List<IdSanitizationScenario>> idSanitizationScenarios() {
+    public static Stream<Arguments> idSanitizationScenarios() {
         return Arrays.stream(IdSanitizationScenario.values())
-                     .map(Collections::singletonList)
-                     .collect(Collectors.toList());
+                     .map(Arguments::of);
     }
 
-    @UseDataProvider("idSanitizationScenarios")
-    @Test
+    @ParameterizedTest
+    @MethodSource("idSanitizationScenarios")
     public void convertWingtipsSpanToZipkinSpan_sanitizes_traceId_as_expected_when_sanitization_is_enabled(
         IdSanitizationScenario scenario
     ) {
@@ -385,8 +395,8 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         assertThat(wingtipsSpan.getTags().get("sanitized_trace_id")).isEqualTo(expectedWingtipsSanitizedIdTagValue);
     }
 
-    @UseDataProvider("idSanitizationScenarios")
-    @Test
+    @ParameterizedTest
+    @MethodSource("idSanitizationScenarios")
     public void convertWingtipsSpanToZipkinSpan_sanitizes_spanId_as_expected_when_sanitization_is_enabled(
         IdSanitizationScenario scenario
     ) {
@@ -408,8 +418,8 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         assertThat(wingtipsSpan.getTags().get("sanitized_span_id")).isEqualTo(scenario.expectedSanitizedResultForSpanIdOrParentSpanId);
     }
 
-    @UseDataProvider("idSanitizationScenarios")
-    @Test
+    @ParameterizedTest
+    @MethodSource("idSanitizationScenarios")
     public void convertWingtipsSpanToZipkinSpan_sanitizes_parentSpanId_as_expected_when_sanitization_is_enabled(
         IdSanitizationScenario scenario
     ) {
@@ -473,8 +483,8 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         assertThat(wingtipsSpan.getTags().get("sanitized_parent_id")).isEqualTo(expectedSanitizedParentSpanId);
     }
 
-    @UseDataProvider("idSanitizationScenarios")
-    @Test
+    @ParameterizedTest
+    @MethodSource("idSanitizationScenarios")
     public void convertWingtipsSpanToZipkinSpan_does_not_sanitize_ids_if_enableIdSanitization_is_false(
         IdSanitizationScenario scenario
     ) {
@@ -519,14 +529,18 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
         }
     }
 
-    @DataProvider(value = {
-        "SERVER",
-        "CLIENT",
-        "LOCAL_ONLY",
-        "UNKNOWN",
-        "NULL"
-    })
-    @Test
+    public static Stream<Arguments> determineZipkinKind_returns_expected_Zipkin_Kind_for_wingtips_SpanPurpose_DataProvider() {
+        return Stream.of(
+            Arguments.of(WingtipsSpanPurposeToZipkinKindScenario.SERVER),
+            Arguments.of(WingtipsSpanPurposeToZipkinKindScenario.CLIENT),
+            Arguments.of(WingtipsSpanPurposeToZipkinKindScenario.LOCAL_ONLY),
+            Arguments.of(WingtipsSpanPurposeToZipkinKindScenario.UNKNOWN),
+            Arguments.of(WingtipsSpanPurposeToZipkinKindScenario.NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("determineZipkinKind_returns_expected_Zipkin_Kind_for_wingtips_SpanPurpose_DataProvider")
     public void determineZipkinKind_returns_expected_Zipkin_Kind_for_wingtips_SpanPurpose(
         WingtipsSpanPurposeToZipkinKindScenario scenario
     ) {
@@ -547,11 +561,16 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
     }
 
     // Verify the method at a per-character level to catch all the branching logic.
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+
+    public static Stream<Arguments> isHex_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isHex_works_as_expected_DataProvider")
     public void isHex_works_as_expected(boolean allowUppercase) {
         for (char c = Character.MIN_VALUE; c < Character.MAX_VALUE; c++) {
             // given
@@ -573,31 +592,36 @@ public class WingtipsToZipkinSpanConverterDefaultImplTest {
     }
 
     // Verify the attemptToConvertToLong method with various scenarios to catch branching logic and corner cases.
-    @DataProvider(value = {
-        "0                      |   true",
-        "1                      |   true",
-        "-1                     |   true",
-        "42                     |   true",
-        "-42                    |   true",
-        "2147483648             |   true",  // Greater than max int (but still in long range).
-        "-2147483649            |   true",  // Less than min int (but still in long range).
-        "9199999999999999999    |   true",  // Same num digits as max long, but digit before the end is less than same digit in max long.
-        "-9199999999999999999   |   true",  // Same num digits as min long, but digit before the end is less than same digit in min long.
-        "9223372036854775807    |   true",  // Exactly max long.
-        "-9223372036854775808   |   true",  // Exactly min long.
-        "9223372036854775808    |   false", // 1 bigger than max long.
-        "-9223372036854775809   |   false", // 1 less than min long.
-        "9300000000000000000    |   false", // Same num digits as max long, but digit before the end is greater than than same digit in max long.
-        "-9300000000000000000   |   false", // Same num digits as min long, but digit before the end is greater than than same digit in min long.
-        "10000000000000000000   |   false", // Too many digits (positive).
-        "-10000000000000000000  |   false", // Too many digits (negative).
-        "42blue42               |   false", // Contains non-digits.
-        "42f                    |   false", // Contains non-digits.
-        "4-2                    |   false", // Contains dash in a spot other than the beginning.
-        "42-                    |   false", // Contains dash in a spot other than the beginning.
-        "null                   |   false"  // Null can't be converted to a long.
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> attemptToConvertToLong_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("0", true),
+            Arguments.of("1", true),
+            Arguments.of("-1", true),
+            Arguments.of("42", true),
+            Arguments.of("-42", true),
+            Arguments.of("2147483648", true),
+            Arguments.of("-2147483649", true),
+            Arguments.of("9199999999999999999", true),
+            Arguments.of("-9199999999999999999", true),
+            Arguments.of("9223372036854775807", true),
+            Arguments.of("-9223372036854775808", true),
+            Arguments.of("9223372036854775808", false),
+            Arguments.of("-9223372036854775809", false),
+            Arguments.of("9300000000000000000", false),
+            Arguments.of("-9300000000000000000", false),
+            Arguments.of("10000000000000000000", false),
+            Arguments.of("-10000000000000000000", false),
+            Arguments.of("42blue42", false),
+            Arguments.of("42f", false),
+            Arguments.of("4-2", false),
+            Arguments.of("42-", false),
+            Arguments.of(null, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("attemptToConvertToLong_works_as_expected_DataProvider")
     public void attemptToConvertToLong_works_as_expected(String longAsString, boolean expectValidLongResult) {
         // given
         Long expectedResult = (expectValidLongResult) ? Long.parseLong(longAsString) : null;

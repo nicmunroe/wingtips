@@ -14,11 +14,10 @@ dependencies {
     )
     testImplementation(
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
             "org.springframework.boot:spring-boot-starter-webflux:$springboot2Version",
     )

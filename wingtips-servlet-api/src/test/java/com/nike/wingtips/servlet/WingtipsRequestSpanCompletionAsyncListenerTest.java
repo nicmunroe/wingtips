@@ -10,13 +10,9 @@ import com.nike.wingtips.tags.NoOpHttpTagStrategy;
 import com.nike.wingtips.testutils.ArgCapturingHttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.ArrayList;
@@ -41,13 +37,16 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Verifies the functionality of {@link WingtipsRequestSpanCompletionAsyncListener}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsRequestSpanCompletionAsyncListenerTest {
 
     private WingtipsRequestSpanCompletionAsyncListener implSpy;
@@ -69,7 +68,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
     private AtomicReference<ArgCapturingHttpTagAndSpanNamingStrategy.RequestTaggingArgs> strategyRequestTaggingArgs;
     private AtomicReference<ArgCapturingHttpTagAndSpanNamingStrategy.ResponseTaggingArgs> strategyResponseTaggingArgs;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         Tracer.getInstance().startRequestWithRootSpan("someRequestSpan");
         tracingState = TracingState.getCurrentThreadTracingState();
@@ -101,11 +100,11 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         doReturn(requestMock).when(asyncEventMock).getSuppliedRequest();
         doReturn(responseMock).when(asyncEventMock).getSuppliedResponse();
         doReturn(errorThrown).when(asyncEventMock).getThrowable();
-        
+
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -257,15 +256,19 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         }
     }
 
-    @DataProvider(value = {
-        "ALL_RESOURCES_EXIST",
-        "REQUEST_IS_NULL",
-        "REQUEST_IS_NOT_HTTP_SERVLET_REQUEST",
-        "RESPONSE_IS_NULL",
-        "RESPONSE_IS_NOT_HTTP_SERVLET_REQUEST",
-        "ERROR_IS_NULL"
-    })
-    @Test
+    public static Stream<Arguments> completeRequestSpan_completes_request_span_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(TaggingResourceScenario.ALL_RESOURCES_EXIST),
+            Arguments.of(TaggingResourceScenario.REQUEST_IS_NULL),
+            Arguments.of(TaggingResourceScenario.REQUEST_IS_NOT_HTTP_SERVLET_REQUEST),
+            Arguments.of(TaggingResourceScenario.RESPONSE_IS_NULL),
+            Arguments.of(TaggingResourceScenario.RESPONSE_IS_NOT_HTTP_SERVLET_REQUEST),
+            Arguments.of(TaggingResourceScenario.ERROR_IS_NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("completeRequestSpan_completes_request_span_as_expected_DataProvider")
     public void completeRequestSpan_completes_request_span_as_expected(TaggingResourceScenario scenario) {
         // given
         Tracer.getInstance().startRequestWithRootSpan("someOtherUnrelatedSpan");
@@ -345,7 +348,7 @@ public class WingtipsRequestSpanCompletionAsyncListenerTest {
         assertThat(tracingStateSpan.isCompleted()).isFalse();
         assertThat(implSpy.alreadyCompleted.get()).isTrue();
     }
-    
+
     public static class SpanRecorder implements SpanLifecycleListener {
 
         public final List<Span> completedSpans = Collections.synchronizedList(new ArrayList<>());

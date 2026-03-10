@@ -25,16 +25,11 @@ import com.nike.wingtips.util.operationwrapper.OperationWrapperOptions;
 import com.nike.wingtips.util.spantagger.ErrorSpanTagger;
 import com.nike.wingtips.util.spantagger.SpanTagger;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 import java.util.ArrayList;
@@ -84,13 +79,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link AsyncWingtipsHelper}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class AsyncWingtipsHelperTest {
 
     private Runnable runnableMock;
@@ -106,8 +104,8 @@ public class AsyncWingtipsHelperTest {
     private ScheduledExecutorService scheduledExecutorServiceMock;
 
     private static SpanRecorder spanRecorder;
-    
-    @Before
+
+    @BeforeEach
     public void beforeMethod() {
         runnableMock = mock(Runnable.class);
         callableMock = mock(Callable.class);
@@ -130,7 +128,7 @@ public class AsyncWingtipsHelperTest {
         Tracer.getInstance().addSpanLifecycleListener(spanRecorder);
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -166,11 +164,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> runnableWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("runnableWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void runnableWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -184,11 +186,15 @@ public class AsyncWingtipsHelperTest {
         verifyRunnableWithTracing(result, runnableMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> runnableWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("runnableWithTracing_pair_works_as_expected_DataProvider")
     public void runnableWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -202,11 +208,15 @@ public class AsyncWingtipsHelperTest {
         verifyRunnableWithTracing(result, runnableMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> runnableWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("runnableWithTracing_separate_args_works_as_expected_DataProvider")
     public void runnableWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -230,11 +240,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> callableWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("callableWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void callableWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -248,11 +262,15 @@ public class AsyncWingtipsHelperTest {
         verifyCallableWithTracing(result, callableMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> callableWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("callableWithTracing_pair_works_as_expected_DataProvider")
     public void callableWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -266,11 +284,15 @@ public class AsyncWingtipsHelperTest {
         verifyCallableWithTracing(result, callableMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> callableWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("callableWithTracing_separate_args_works_as_expected_DataProvider")
     public void callableWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -294,11 +316,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> supplierWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("supplierWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void supplierWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -312,11 +338,15 @@ public class AsyncWingtipsHelperTest {
         verifySupplierWithTracing(result, supplierMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> supplierWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("supplierWithTracing_pair_works_as_expected_DataProvider")
     public void supplierWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -330,11 +360,15 @@ public class AsyncWingtipsHelperTest {
         verifySupplierWithTracing(result, supplierMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> supplierWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("supplierWithTracing_separate_args_works_as_expected_DataProvider")
     public void supplierWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -358,11 +392,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> functionWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("functionWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void functionWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -376,11 +414,15 @@ public class AsyncWingtipsHelperTest {
         verifyFunctionWithTracing(result, functionMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> functionWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("functionWithTracing_pair_works_as_expected_DataProvider")
     public void functionWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -394,11 +436,15 @@ public class AsyncWingtipsHelperTest {
         verifyFunctionWithTracing(result, functionMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> functionWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("functionWithTracing_separate_args_works_as_expected_DataProvider")
     public void functionWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -422,11 +468,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biFunctionWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biFunctionWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void biFunctionWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -440,11 +490,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiFunctionWithTracing(result, biFunctionMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biFunctionWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biFunctionWithTracing_pair_works_as_expected_DataProvider")
     public void biFunctionWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -458,11 +512,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiFunctionWithTracing(result, biFunctionMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biFunctionWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biFunctionWithTracing_separate_args_works_as_expected_DataProvider")
     public void biFunctionWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -486,11 +544,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> consumerWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumerWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void consumerWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -504,11 +566,15 @@ public class AsyncWingtipsHelperTest {
         verifyConsumerWithTracing(result, consumerMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> consumerWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumerWithTracing_pair_works_as_expected_DataProvider")
     public void consumerWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -522,11 +588,15 @@ public class AsyncWingtipsHelperTest {
         verifyConsumerWithTracing(result, consumerMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> consumerWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("consumerWithTracing_separate_args_works_as_expected_DataProvider")
     public void consumerWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -550,11 +620,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biConsumerWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biConsumerWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void biConsumerWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -568,11 +642,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiConsumerWithTracing(result, biConsumerMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biConsumerWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biConsumerWithTracing_pair_works_as_expected_DataProvider")
     public void biConsumerWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -586,11 +664,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiConsumerWithTracing(result, biConsumerMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biConsumerWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biConsumerWithTracing_separate_args_works_as_expected_DataProvider")
     public void biConsumerWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -614,11 +696,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> predicateWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("predicateWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void predicateWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -632,11 +718,15 @@ public class AsyncWingtipsHelperTest {
         verifyPredicateWithTracing(result, predicateMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> predicateWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("predicateWithTracing_pair_works_as_expected_DataProvider")
     public void predicateWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -650,11 +740,15 @@ public class AsyncWingtipsHelperTest {
         verifyPredicateWithTracing(result, predicateMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> predicateWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("predicateWithTracing_separate_args_works_as_expected_DataProvider")
     public void predicateWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -678,11 +772,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "mdcContextMapForExecution")).isEqualTo(expectedMdcInfo);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biPredicateWithTracing_using_current_thread_info_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biPredicateWithTracing_using_current_thread_info_works_as_expected_DataProvider")
     public void biPredicateWithTracing_using_current_thread_info_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = setupCurrentThreadWithTracingInfo();
@@ -696,11 +794,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiPredicateWithTracing(result, biPredicateMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biPredicateWithTracing_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biPredicateWithTracing_pair_works_as_expected_DataProvider")
     public void biPredicateWithTracing_pair_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -714,11 +816,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiPredicateWithTracing(result, biPredicateMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> biPredicateWithTracing_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("biPredicateWithTracing_separate_args_works_as_expected_DataProvider")
     public void biPredicateWithTracing_separate_args_works_as_expected(boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> setupInfo = generateTracingInfo();
@@ -733,11 +839,15 @@ public class AsyncWingtipsHelperTest {
         verifyBiPredicateWithTracing(result, biPredicateMock, setupInfo.getLeft(), setupInfo.getRight());
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> executorServiceWithTracing_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("executorServiceWithTracing_works_as_expected_DataProvider")
     public void executorServiceWithTracing_works_as_expected(boolean useStaticMethod) {
         // when
         ExecutorServiceWithTracing result = (useStaticMethod)
@@ -748,11 +858,15 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "delegate")).isSameAs(executorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> scheduledExecutorServiceWithTracing_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("scheduledExecutorServiceWithTracing_works_as_expected_DataProvider")
     public void scheduledExecutorServiceWithTracing_works_as_expected(boolean useStaticMethod) {
         // when
         ScheduledExecutorServiceWithTracing result =
@@ -764,13 +878,17 @@ public class AsyncWingtipsHelperTest {
         assertThat(Whitebox.getInternalState(result, "delegate")).isSameAs(scheduledExecutorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> linkTracingToCurrentThread_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("linkTracingToCurrentThread_pair_works_as_expected_DataProvider")
     public void linkTracingToCurrentThread_pair_works_as_expected(boolean useNullPair, boolean useStaticMethod) {
         // given
         Pair<Deque<Span>, Map<String, String>> infoForLinking = (useNullPair) ? null
@@ -787,7 +905,7 @@ public class AsyncWingtipsHelperTest {
             (useStaticMethod)
             ? linkTracingToCurrentThread(infoForLinking)
             : DEFAULT_IMPL.linkTracingToCurrentThread(infoForLinking);
-        
+
         Pair<Deque<Span>, Map<String, String>> postCallInfo = Pair.of(
             Tracer.getInstance().getCurrentSpanStackCopy(),
             MDC.getCopyOfContextMap()
@@ -803,11 +921,15 @@ public class AsyncWingtipsHelperTest {
             assertThat(postCallInfo).isEqualTo(infoForLinking);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> linkTracingToCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("linkTracingToCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards_DataProvider")
     public void linkTracingToCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards(
         boolean useStaticMethod
     ) {
@@ -825,7 +947,7 @@ public class AsyncWingtipsHelperTest {
             (useStaticMethod)
             ? linkTracingToCurrentThread(infoForLinking)
             : DEFAULT_IMPL.linkTracingToCurrentThread(infoForLinking);
-        
+
         Pair<Deque<Span>, Map<String, String>> postCallInfo = Pair.of(
             Tracer.getInstance().getCurrentSpanStackCopy(),
             MDC.getCopyOfContextMap()
@@ -837,17 +959,21 @@ public class AsyncWingtipsHelperTest {
         assertThat(postCallInfo.getRight()).isNullOrEmpty();
     }
 
-    @DataProvider(value = {
-        "true   |   true    |   true",
-        "false  |   true    |   true",
-        "true   |   false   |   true",
-        "false  |   false   |   true",
-        "true   |   true    |   false",
-        "false  |   true    |   false",
-        "true   |   false   |   false",
-        "false  |   false   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> linkTracingToCurrentThread_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, true),
+            Arguments.of(false, true, true),
+            Arguments.of(true, false, true),
+            Arguments.of(false, false, true),
+            Arguments.of(true, true, false),
+            Arguments.of(false, true, false),
+            Arguments.of(true, false, false),
+            Arguments.of(false, false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("linkTracingToCurrentThread_separate_args_works_as_expected_DataProvider")
     public void linkTracingToCurrentThread_separate_args_works_as_expected(boolean useNullSpanStack,
                                                                                  boolean useNullMdcInfo,
                                                                                  boolean useStaticMethod) {
@@ -906,13 +1032,17 @@ public class AsyncWingtipsHelperTest {
         }
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unlinkTracingFromCurrentThread_pair_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unlinkTracingFromCurrentThread_pair_works_as_expected_DataProvider")
     public void unlinkTracingFromCurrentThread_pair_works_as_expected(boolean useNullPair,
                                                                             boolean useStaticMethod) {
         // given
@@ -945,11 +1075,15 @@ public class AsyncWingtipsHelperTest {
             assertThat(postCallInfo).isEqualTo(infoForLinking);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> unlinkTracingFromCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unlinkTracingFromCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards_DataProvider")
     public void unlinkTracingFromCurrentThread_pair_works_as_expected_with_non_null_pair_and_null_innards(
         boolean useStaticMethod
     ) {
@@ -978,17 +1112,21 @@ public class AsyncWingtipsHelperTest {
         assertThat(postCallInfo.getRight()).isNullOrEmpty();
     }
 
-    @DataProvider(value = {
-        "true   |   true    |   true",
-        "false  |   true    |   true",
-        "true   |   false   |   true",
-        "false  |   false   |   true",
-        "true   |   true    |   false",
-        "false  |   true    |   false",
-        "true   |   false   |   false",
-        "false  |   false   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> unlinkTracingFromCurrentThread_separate_args_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, true),
+            Arguments.of(false, true, true),
+            Arguments.of(true, false, true),
+            Arguments.of(false, false, true),
+            Arguments.of(true, true, false),
+            Arguments.of(false, true, false),
+            Arguments.of(true, false, false),
+            Arguments.of(false, false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unlinkTracingFromCurrentThread_separate_args_works_as_expected_DataProvider")
     public void unlinkTracingFromCurrentThread_separate_args_works_as_expected(boolean useNullSpanStack,
                                                                                      boolean useNullMdcInfo,
                                                                                      boolean useStaticMethod) {
@@ -1119,20 +1257,18 @@ public class AsyncWingtipsHelperTest {
                 .isSameAs(Tracer.getInstance().getCurrentSpan());
         }
     }
-
-    @DataProvider
-    public static List<List<Object>> parentAndCurrentThreadTracingStateScenarioDataProvider() {
+    public static Stream<Arguments> parentAndCurrentThreadTracingStateScenario_DataProvider() {
         List<List<Object>> result = new ArrayList<>();
         for (ParentAndCurrentThreadTracingStateScenario scenario : ParentAndCurrentThreadTracingStateScenario.values()) {
             result.add(Arrays.asList(scenario, true));
             result.add(Arrays.asList(scenario, false));
         }
 
-        return result;
+        return result.stream().map(l -> Arguments.of(l.toArray()));
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCompletableFutureWithSpan_works_as_expected_for_completable_futures_that_complete_normally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1236,8 +1372,8 @@ public class AsyncWingtipsHelperTest {
         }
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCompletableFutureWithSpan_works_as_expected_for_completable_futures_that_complete_exceptionally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1296,8 +1432,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCompletableFutureWithSpan_works_as_expected_when_unexpected_exception_occurs_outside_the_future(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1351,8 +1487,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCompletableFutureWithSpan_has_expected_tracing_state_attached_to_thread_at_time_of_supplier_execution(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1431,20 +1567,18 @@ public class AsyncWingtipsHelperTest {
             return mock(operationClazz);
         }
     }
-
-    @DataProvider
-    public static List<List<Object>> wrapOperationMethodNullArgScenarioDataProvider() {
+    public static Stream<Arguments> wrapOperationMethodNullArgScenario_DataProvider() {
         List<List<Object>> result = new ArrayList<>();
         for (WrapOperationMethodNullArgScenario scenario : WrapOperationMethodNullArgScenario.values()) {
             result.add(Arrays.asList(scenario, true));
             result.add(Arrays.asList(scenario, false));
         }
 
-        return result;
+        return result.stream().map(l -> Arguments.of(l.toArray()));
     }
 
-    @UseDataProvider("wrapOperationMethodNullArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("wrapOperationMethodNullArgScenario_DataProvider")
     public void wrapCompletableFutureWithSpan_throws_NullPointerException_if_passed_null_args(
         WrapOperationMethodNullArgScenario scenario, boolean useStaticMethod
     ) {
@@ -1470,8 +1604,8 @@ public class AsyncWingtipsHelperTest {
             .hasMessage(expectedExMessage);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCallableWithSpan_works_as_expected_for_callables_that_complete_normally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) throws Exception {
@@ -1534,8 +1668,8 @@ public class AsyncWingtipsHelperTest {
         return new TracingState(spanStackToUse, mdcInfoToUse);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCallableWithSpan_works_as_expected_for_callables_that_throw_exceptions(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1590,8 +1724,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("wrapOperationMethodNullArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("wrapOperationMethodNullArgScenario_DataProvider")
     public void wrapCallableWithSpan_throws_NullPointerException_if_passed_null_args(
         WrapOperationMethodNullArgScenario scenario, boolean useStaticMethod
     ) {
@@ -1617,8 +1751,8 @@ public class AsyncWingtipsHelperTest {
             .hasMessage(expectedExMessage);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapSupplierWithSpan_works_as_expected_for_suppliers_that_complete_normally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1669,8 +1803,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapSupplierWithSpan_works_as_expected_for_suppliers_that_throw_exceptions(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1725,8 +1859,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("wrapOperationMethodNullArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("wrapOperationMethodNullArgScenario_DataProvider")
     public void wrapSupplierWithSpan_throws_NullPointerException_if_passed_null_args(
         WrapOperationMethodNullArgScenario scenario, boolean useStaticMethod
     ) {
@@ -1751,9 +1885,9 @@ public class AsyncWingtipsHelperTest {
             .isInstanceOf(NullPointerException.class)
             .hasMessage(expectedExMessage);
     }
-    
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapRunnableWithSpan_works_as_expected_for_runnables_that_complete_normally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1806,8 +1940,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapRunnableWithSpan_works_as_expected_for_runnables_that_throw_exceptions(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1862,8 +1996,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("wrapOperationMethodNullArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("wrapOperationMethodNullArgScenario_DataProvider")
     public void wrapRunnableWithSpan_throws_NullPointerException_if_passed_null_args(
         WrapOperationMethodNullArgScenario scenario, boolean useStaticMethod
     ) {
@@ -1889,8 +2023,8 @@ public class AsyncWingtipsHelperTest {
             .hasMessage(expectedExMessage);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCheckedRunnableWithSpan_works_as_expected_for_runnables_that_complete_normally(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) throws Exception {
@@ -1943,8 +2077,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("parentAndCurrentThreadTracingStateScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("parentAndCurrentThreadTracingStateScenario_DataProvider")
     public void wrapCheckedRunnableWithSpan_works_as_expected_for_runnables_that_throw_exceptions(
         ParentAndCurrentThreadTracingStateScenario scenario, boolean useStaticMethod
     ) {
@@ -1999,8 +2133,8 @@ public class AsyncWingtipsHelperTest {
         verifySpanAncestryForWrapOptions(resultSpan, scenarioValues.expectedParentSpan);
     }
 
-    @UseDataProvider("wrapOperationMethodNullArgScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("wrapOperationMethodNullArgScenario_DataProvider")
     public void wrapCheckedRunnableWithSpan_throws_NullPointerException_if_passed_null_args(
         WrapOperationMethodNullArgScenario scenario, boolean useStaticMethod
     ) {
@@ -2026,11 +2160,15 @@ public class AsyncWingtipsHelperTest {
             .hasMessage(expectedExMessage);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> AsyncWingtipsHelperDefaultImpl_wrapCheckedExInRuntimeExIfNecessary_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("AsyncWingtipsHelperDefaultImpl_wrapCheckedExInRuntimeExIfNecessary_works_as_expected_DataProvider")
     public void AsyncWingtipsHelperDefaultImpl_wrapCheckedExInRuntimeExIfNecessary_works_as_expected(
         boolean exIsRuntimeEx
     ) {
@@ -2054,17 +2192,21 @@ public class AsyncWingtipsHelperTest {
         }
     }
 
-    @DataProvider(value = {
-        "false  |   false   |   false",
-        "true   |   false   |   false",
-        "false  |   true    |   false",
-        "false  |   false   |   true",
-        "true   |   true    |   false",
-        "true   |   false   |   true",
-        "false  |   true    |   true",
-        "true   |   true    |   true",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(false, false, false),
+            Arguments.of(true, false, false),
+            Arguments.of(false, true, false),
+            Arguments.of(false, false, true),
+            Arguments.of(true, true, false),
+            Arguments.of(true, false, true),
+            Arguments.of(false, true, true),
+            Arguments.of(true, true, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_works_as_expected_DataProvider")
     public void AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_works_as_expected(
         boolean taggerIsNull, boolean errorTaggerIsNull, boolean errorExIsNull
     ) {
@@ -2100,12 +2242,16 @@ public class AsyncWingtipsHelperTest {
         }
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "false  |   true",
-        "true   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_gracefully_handles_unexpected_tagger_exceptions_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(false, true),
+            Arguments.of(true, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_gracefully_handles_unexpected_tagger_exceptions_DataProvider")
     public void AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_gracefully_handles_unexpected_tagger_exceptions(
         boolean taggerThrowsEx, boolean errorTaggerThrowsEx
     ) {
@@ -2146,12 +2292,16 @@ public class AsyncWingtipsHelperTest {
         verify(errorTaggerMock).tagSpanForError(spanMock, errorEx);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "false  |   true",
-        "true   |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_does_nothing_when_span_or_options_are_null_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(false, true),
+            Arguments.of(true, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_does_nothing_when_span_or_options_are_null_DataProvider")
     public void AsyncWingtipsHelperDefaultImpl_doSpanTaggingWithoutExceptionPropagation_does_nothing_when_span_or_options_are_null(
         boolean spanIsNull, boolean optionsIsNull
     ) {
@@ -2180,11 +2330,15 @@ public class AsyncWingtipsHelperTest {
         }
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> AsyncWingtipsHelperDefaultImpl_doCloseSpanIfPossible_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("AsyncWingtipsHelperDefaultImpl_doCloseSpanIfPossible_works_as_expected_DataProvider")
     public void AsyncWingtipsHelperDefaultImpl_doCloseSpanIfPossible_works_as_expected(boolean spanIsNull) {
         // given
         Span spanMock = (spanIsNull) ? null : mock(Span.class);

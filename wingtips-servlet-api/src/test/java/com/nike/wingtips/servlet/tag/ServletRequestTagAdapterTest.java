@@ -2,12 +2,8 @@ package com.nike.wingtips.servlet.tag;
 
 import com.nike.wingtips.tags.KnownZipkinTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,35 +21,42 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ServletRequestTagAdapter}.
  */
-@RunWith(DataProviderRunner.class)
 public class ServletRequestTagAdapterTest {
 
     private ServletRequestTagAdapter adapterSpy;
     private HttpServletRequest requestMock;
     private HttpServletResponse responseMock;
 
-    @Before
+    @BeforeEach
     public void setup() {
         adapterSpy = spy(new ServletRequestTagAdapter());
         requestMock = mock(HttpServletRequest.class);
         responseMock = mock(HttpServletResponse.class);
     }
 
-    @DataProvider(value = {
-        "null   |   null",
-        "200    |   null",
-        "300    |   null",
-        "400    |   null",
-        "499    |   null",
-        "500    |   500",
-        "599    |   599",
-        "999    |   999"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getErrorResponseTagValue_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(null, null),
+            Arguments.of(200, null),
+            Arguments.of(300, null),
+            Arguments.of(400, null),
+            Arguments.of(499, null),
+            Arguments.of(500, "500"),
+            Arguments.of(599, "599"),
+            Arguments.of(999, "999")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getErrorResponseTagValue_works_as_expected_DataProvider")
     public void getErrorResponseTagValue_works_as_expected(Integer statusCode, String expectedTagValue) {
         // given
         doReturn(statusCode).when(adapterSpy).getResponseHttpStatus(any(HttpServletResponse.class));
@@ -68,13 +71,17 @@ public class ServletRequestTagAdapterTest {
         verifyNoMoreInteractions(adapterSpy);
     }
 
-    @DataProvider(value = {
-        "http://some.host:4242/foo/bar  |   queryStr=stuff  |   http://some.host:4242/foo/bar?queryStr=stuff",
-        "http://some.host:4242/foo/bar  |   null            |   http://some.host:4242/foo/bar",
-        "http://some.host:4242/foo/bar  |                   |   http://some.host:4242/foo/bar",
-        "http://some.host:4242/foo/bar  |   [whitespace]    |   http://some.host:4242/foo/bar",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getRequestUrl_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("http://some.host:4242/foo/bar", "queryStr=stuff", "http://some.host:4242/foo/bar?queryStr=stuff"),
+            Arguments.of("http://some.host:4242/foo/bar", null, "http://some.host:4242/foo/bar"),
+            Arguments.of("http://some.host:4242/foo/bar", "", "http://some.host:4242/foo/bar"),
+            Arguments.of("http://some.host:4242/foo/bar", "[whitespace]", "http://some.host:4242/foo/bar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getRequestUrl_works_as_expected_DataProvider")
     public void getRequestUrl_works_as_expected(
         String requestUrlNoQueryString, String queryString, String expectedResult
     ) {
@@ -159,25 +166,24 @@ public class ServletRequestTagAdapterTest {
 
     // Basically a copy of the HttpSpanFactory.determineUriPathTemplate() test, since getRequestUriPathTemplate
     //      just delegates to HttpSpanFactory.determineUriPathTemplate().
-    @DataProvider(value = {
-        // http.route takes precedence
-        "/some/http/route   |   /some/spring/pattern    |   /some/http/route",
 
-        "/some/http/route   |   null                    |   /some/http/route",
-        "/some/http/route   |                           |   /some/http/route",
-        "/some/http/route   |   [whitespace]            |   /some/http/route",
+    public static Stream<Arguments> getRequestUriPathTemplate_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("/some/http/route", "/some/spring/pattern", "/some/http/route"),
+            Arguments.of("/some/http/route", null, "/some/http/route"),
+            Arguments.of("/some/http/route", "", "/some/http/route"),
+            Arguments.of("/some/http/route", "[whitespace]", "/some/http/route"),
+            Arguments.of(null, "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of("", "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of("[whitespace]", "/some/spring/pattern", "/some/spring/pattern"),
+            Arguments.of(null, null, null),
+            Arguments.of("", "", null),
+            Arguments.of("[whitespace]", "[whitespace]", null)
+        );
+    }
 
-        // Spring matching pattern request attr is used if http.route is null/blank
-        "null               |   /some/spring/pattern    |   /some/spring/pattern",
-        "                   |   /some/spring/pattern    |   /some/spring/pattern",
-        "[whitespace]       |   /some/spring/pattern    |   /some/spring/pattern",
-
-        // null returned if both request attrs are null/blank
-        "null               |   null                    |   null",
-        "                   |                           |   null",
-        "[whitespace]       |   [whitespace]            |   null",
-    }, splitBy = "\\|")
-    @Test
+    @ParameterizedTest
+    @MethodSource("getRequestUriPathTemplate_works_as_expected_DataProvider")
     public void getRequestUriPathTemplate_works_as_expected(
         String httpRouteRequestAttr,
         String springMatchingPatternRequestAttr,

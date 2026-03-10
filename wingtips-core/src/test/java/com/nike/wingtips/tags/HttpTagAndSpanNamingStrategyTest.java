@@ -3,14 +3,10 @@ package com.nike.wingtips.tags;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Span.SpanPurpose;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -27,13 +23,16 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of the default methods found in {@link HttpTagAndSpanNamingStrategy}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class HttpTagAndSpanNamingStrategyTest {
 
     private HttpTagAndSpanNamingStrategy<Object, Object> implSpy;
@@ -43,7 +42,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     private Throwable errorMock;
     private HttpTagAndSpanNamingAdapter<Object, Object> adapterMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         implSpy = spy(new BasicImpl());
 
@@ -75,7 +74,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     private static final Object staticRequestObjMock = mock(Object.class);
     private static final HttpTagAndSpanNamingAdapter<Object, Object> staticAdapterMock =
         mock(HttpTagAndSpanNamingAdapter.class);
-    
+
     private enum NullArgCornerCaseScenario {
         SPAN_IS_NULL(null, staticRequestObjMock, staticAdapterMock),
         REQUEST_OBJ_IS_NULL(staticSpanMock, null, staticAdapterMock),
@@ -94,11 +93,15 @@ public class HttpTagAndSpanNamingStrategyTest {
         }
     }
 
-    @DataProvider(value = {
-        "REQUEST_OBJ_IS_NULL",
-        "ADAPTER_IS_NULL",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getInitialSpanName_returns_null_in_null_arg_corner_cases_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullArgCornerCaseScenario.REQUEST_OBJ_IS_NULL),
+            Arguments.of(NullArgCornerCaseScenario.ADAPTER_IS_NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getInitialSpanName_returns_null_in_null_arg_corner_cases_DataProvider")
     @SuppressWarnings("ConstantConditions")
     public void getInitialSpanName_returns_null_in_null_arg_corner_cases(NullArgCornerCaseScenario scenario) {
         // given
@@ -151,12 +154,16 @@ public class HttpTagAndSpanNamingStrategyTest {
         verifyZeroInteractions(spanMock, requestObjectMock, adapterMock);
     }
 
-    @DataProvider(value = {
-        "SPAN_IS_NULL",
-        "REQUEST_OBJ_IS_NULL",
-        "ADAPTER_IS_NULL",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> handleRequestTagging_does_nothing_in_null_arg_corner_cases_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullArgCornerCaseScenario.SPAN_IS_NULL),
+            Arguments.of(NullArgCornerCaseScenario.REQUEST_OBJ_IS_NULL),
+            Arguments.of(NullArgCornerCaseScenario.ADAPTER_IS_NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("handleRequestTagging_does_nothing_in_null_arg_corner_cases_DataProvider")
     @SuppressWarnings("ConstantConditions")
     public void handleRequestTagging_does_nothing_in_null_arg_corner_cases(NullArgCornerCaseScenario scenario) {
         // given
@@ -227,11 +234,15 @@ public class HttpTagAndSpanNamingStrategyTest {
         verifyZeroInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
     }
 
-    @DataProvider(value = {
-        "SPAN_IS_NULL",
-        "ADAPTER_IS_NULL",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> handleResponseTaggingAndFinalSpanName_does_nothing_in_null_arg_corner_cases_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullArgCornerCaseScenario.SPAN_IS_NULL),
+            Arguments.of(NullArgCornerCaseScenario.ADAPTER_IS_NULL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("handleResponseTaggingAndFinalSpanName_does_nothing_in_null_arg_corner_cases_DataProvider")
     @SuppressWarnings("ConstantConditions")
     public void handleResponseTaggingAndFinalSpanName_does_nothing_in_null_arg_corner_cases(
         NullArgCornerCaseScenario scenario
@@ -295,7 +306,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         doThrow(new RuntimeException("boom")).when(implSpy).doDetermineAndSetFinalSpanName(
             any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
-        
+
         doNothing().when(implSpy).doHandleResponseAndErrorTagging(
             any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
@@ -386,12 +397,16 @@ public class HttpTagAndSpanNamingStrategyTest {
         verify(adapterMock).getFinalSpanName(requestObjectMock, responseObjectMock);
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        "[whitespace]"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> doDetermineAndSetFinalSpanName_delegates_to_adapter_getFinalSpanName_and_does_NOT_change_span_name_if_result_IS_blank_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of("[whitespace]")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doDetermineAndSetFinalSpanName_delegates_to_adapter_getFinalSpanName_and_does_NOT_change_span_name_if_result_IS_blank_DataProvider")
     public void doDetermineAndSetFinalSpanName_delegates_to_adapter_getFinalSpanName_and_does_NOT_change_span_name_if_result_IS_blank(
         String blankAdapterResult
     ) {
@@ -428,12 +443,16 @@ public class HttpTagAndSpanNamingStrategyTest {
         verifyNoMoreInteractions(spanMock);
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        "[whitespace]"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> doExtraWingtipsTagging_does_NOT_add_SPAN_HANDLER_tag_if_adapter_getSpanHandlerTagValue_IS_blank_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of("[whitespace]")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("doExtraWingtipsTagging_does_NOT_add_SPAN_HANDLER_tag_if_adapter_getSpanHandlerTagValue_IS_blank_DataProvider")
     public void doExtraWingtipsTagging_does_NOT_add_SPAN_HANDLER_tag_if_adapter_getSpanHandlerTagValue_IS_blank(
         String blankAdapterResult
     ) {
@@ -467,12 +486,16 @@ public class HttpTagAndSpanNamingStrategyTest {
         verify(spanMock).putTag(tagKey, tagValueToStringResult);
     }
 
-    @DataProvider(value = {
-        "null",
-        "",
-        "[whitespace]"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> putTagIfValueIsNotBlank_does_nothing_when_tagValue_toString_IS_blank_DataProvider() {
+        return Stream.of(
+            Arguments.of((Object) null),
+            Arguments.of(""),
+            Arguments.of("[whitespace]")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("putTagIfValueIsNotBlank_does_nothing_when_tagValue_toString_IS_blank_DataProvider")
     public void putTagIfValueIsNotBlank_does_nothing_when_tagValue_toString_IS_blank(
         String blankTagValueToStringResult
     ) {
@@ -493,12 +516,16 @@ public class HttpTagAndSpanNamingStrategyTest {
         verify(spanMock, never()).putTag(anyString(), anyString());
     }
 
-    @DataProvider(value = {
-        "true   |   false   |   false",
-        "false  |   true    |   false",
-        "false  |   false   |   true"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> putTagIfValueIsNotBlank_does_nothing_when_any_arg_is_null_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, false, false),
+            Arguments.of(false, true, false),
+            Arguments.of(false, false, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("putTagIfValueIsNotBlank_does_nothing_when_any_arg_is_null_DataProvider")
     public void putTagIfValueIsNotBlank_does_nothing_when_any_arg_is_null(
         boolean spanIsNull, boolean tagKeyIsNull, boolean tagValueIsNull
     ) {

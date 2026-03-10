@@ -5,13 +5,9 @@ import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 
@@ -39,13 +35,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ExecutorServiceWithTracing}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ExecutorServiceWithTracingTest {
 
     private ExecutorService executorServiceMock;
@@ -55,7 +54,7 @@ public class ExecutorServiceWithTracingTest {
     private ArgumentCaptor<Runnable> runnableCaptor;
     private ArgumentCaptor<Collection> collectionCaptor;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         executorServiceMock = mock(ExecutorService.class);
         instance = new ExecutorServiceWithTracing(executorServiceMock);
@@ -67,7 +66,7 @@ public class ExecutorServiceWithTracingTest {
         resetTracing();
     }
 
-    @After
+    @AfterEach
     public void afterMethod() {
         resetTracing();
     }
@@ -77,11 +76,15 @@ public class ExecutorServiceWithTracingTest {
         Tracer.getInstance().unregisterFromThread();
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> constructor_sets_fields_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_sets_fields_as_expected_DataProvider")
     public void constructor_sets_fields_as_expected(boolean useStaticFactoryMethod) {
         // given
         executorServiceMock = mock(ExecutorService.class);
@@ -115,11 +118,15 @@ public class ExecutorServiceWithTracingTest {
         verifyNoMoreInteractions(executorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> isShutdown_passes_through_to_delegate_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isShutdown_passes_through_to_delegate_DataProvider")
     public void isShutdown_passes_through_to_delegate(boolean delegateValue) {
         // given
         doReturn(delegateValue).when(executorServiceMock).isShutdown();
@@ -133,11 +140,15 @@ public class ExecutorServiceWithTracingTest {
         verifyNoMoreInteractions(executorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> isTerminated_passes_through_to_delegate_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isTerminated_passes_through_to_delegate_DataProvider")
     public void isTerminated_passes_through_to_delegate(boolean delegateValue) {
         // given
         doReturn(delegateValue).when(executorServiceMock).isTerminated();
@@ -151,11 +162,15 @@ public class ExecutorServiceWithTracingTest {
         verifyNoMoreInteractions(executorServiceMock);
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> awaitTermination_passes_through_to_delegate_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("awaitTermination_passes_through_to_delegate_DataProvider")
     public void awaitTermination_passes_through_to_delegate(boolean delegateValue) throws InterruptedException {
         // given
         long timeoutValue = 42;

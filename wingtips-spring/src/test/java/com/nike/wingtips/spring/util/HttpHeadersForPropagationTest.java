@@ -1,6 +1,6 @@
 package com.nike.wingtips.spring.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMessage;
 
@@ -81,5 +81,5 @@ public class HttpHeadersForPropagationTest {
         // then
         verify(headersMock).set(headerKey, headerValue);
     }
-    
+
 }

@@ -5,12 +5,7 @@ import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.KnownZipkinTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
 import java.util.Collections;
@@ -23,13 +18,15 @@ import static com.nike.wingtips.spring.webflux.client.SpringWebfluxClientRequest
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link SpringWebfluxClientRequestZipkinTagStrategy}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class SpringWebfluxClientRequestZipkinTagStrategyTest {
 
     @Test
@@ -54,14 +51,12 @@ public class SpringWebfluxClientRequestZipkinTagStrategyTest {
             this.expectedTagValue = expectedTagValue;
         }
     }
-
-    @DataProvider
-    public static List<List<LogPrefixScenario>> logPrefixScenarioDataProvider() {
-        return Stream.of(LogPrefixScenario.values()).map(Collections::singletonList).collect(Collectors.toList());
+    public static Stream<Arguments> logPrefixScenario_DataProvider() {
+        return Stream.of(LogPrefixScenario.values()).map(Arguments::of);
     }
 
-    @UseDataProvider("logPrefixScenarioDataProvider")
-    @Test
+    @ParameterizedTest
+    @MethodSource("logPrefixScenario_DataProvider")
     public void doHandleRequestTagging_adds_expected_zipkin_tags_and_spring_log_prefix_tag(
         LogPrefixScenario scenario
     ) {

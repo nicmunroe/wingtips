@@ -6,12 +6,8 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.util.TracingState;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
@@ -31,13 +27,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ServletRuntime}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class ServletRuntimeTest {
 
     private Servlet2Runtime servlet2Runtime;
@@ -46,7 +45,7 @@ public class ServletRuntimeTest {
     private HttpServletRequest requestMock;
     private HttpServletResponse responseMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         servlet2Runtime = new Servlet2Runtime();
         servlet3Runtime = new Servlet3Runtime();
@@ -55,13 +54,17 @@ public class ServletRuntimeTest {
         responseMock = mock(HttpServletResponse.class);
     }
 
-    @DataProvider(value = {
-        "true   |   true    |   true",
-        "true   |   false   |   false",
-        "false  |   true    |   false",
-        "false  |   false   |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> determineServletRuntime_returns_ServletRuntime_based_on_arguments_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true, true),
+            Arguments.of(true, false, false),
+            Arguments.of(false, true, false),
+            Arguments.of(false, false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("determineServletRuntime_returns_ServletRuntime_based_on_arguments_DataProvider")
     public void determineServletRuntime_returns_ServletRuntime_based_on_arguments(
         boolean classHasServlet3Method, boolean useAsyncListenerClassThatExists, boolean expectServlet3Runtime
     ) {
@@ -153,11 +156,15 @@ public class ServletRuntimeTest {
 
     // Servlet3Runtime tests =======================================
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> isAsyncRequest_should_return_the_value_of_request_isAsyncStarted_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isAsyncRequest_should_return_the_value_of_request_isAsyncStarted_DataProvider")
     public void isAsyncRequest_should_return_the_value_of_request_isAsyncStarted(boolean requestIsAsyncStarted) {
         // given
         Servlet3Runtime implSpy = spy(servlet3Runtime);
@@ -204,14 +211,18 @@ public class ServletRuntimeTest {
         assertThat(listener.tagAndNamingAdapter).isSameAs(tagAdapterMock);
     }
 
-    @DataProvider(value = {
-        "FORWARD    |   false",
-        "INCLUDE    |   false",
-        "REQUEST    |   false",
-        "ASYNC      |   true",
-        "ERROR      |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> servlet3_isAsyncDispatch_returns_result_based_on_request_dispatcher_type_DataProvider() {
+        return Stream.of(
+            Arguments.of(DispatcherType.FORWARD, false),
+            Arguments.of(DispatcherType.INCLUDE, false),
+            Arguments.of(DispatcherType.REQUEST, false),
+            Arguments.of(DispatcherType.ASYNC, true),
+            Arguments.of(DispatcherType.ERROR, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("servlet3_isAsyncDispatch_returns_result_based_on_request_dispatcher_type_DataProvider")
     public void servlet3_isAsyncDispatch_returns_result_based_on_request_dispatcher_type(
         DispatcherType dispatcherType, boolean expectedResult
     ) {

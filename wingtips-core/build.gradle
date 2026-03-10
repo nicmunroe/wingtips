@@ -14,13 +14,12 @@ dependencies {
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     )
     testImplementation(
-            "junit:junit-dep:$junitVersion",
+            "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "com.fasterxml.jackson.core:jackson-core:$jacksonVersion",
             "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
             "org.assertj:assertj-core:$assertJVersion",
-            "com.tngtech.java:junit-dataprovider:$junitDataproviderVersion",
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "commons-lang:commons-lang:$apacheCommonsLangVersion"
     )

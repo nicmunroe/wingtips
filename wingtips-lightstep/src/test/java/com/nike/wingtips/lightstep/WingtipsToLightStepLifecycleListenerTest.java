@@ -6,13 +6,9 @@ import com.nike.wingtips.TraceAndSpanIdGenerator;
 
 import com.lightstep.tracer.jre.JRETracer;
 import com.lightstep.tracer.shared.SpanBuilder;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.math.BigInteger;
@@ -41,8 +37,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import java.util.stream.Stream;
 
-@RunWith(DataProviderRunner.class)
 public class WingtipsToLightStepLifecycleListenerTest {
 
     private WingtipsToLightStepLifecycleListener listener;
@@ -52,7 +51,7 @@ public class WingtipsToLightStepLifecycleListenerTest {
     private SpanBuilder lsSpanBuilderMock;
     private io.opentracing.Span otSpanMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         jreTracerMock = mock(JRETracer.class);
         listener = new WingtipsToLightStepLifecycleListener(jreTracerMock);
@@ -93,7 +92,7 @@ public class WingtipsToLightStepLifecycleListenerTest {
             .isInstanceOf(NullPointerException.class)
             .hasMessage("tracer cannot be null.");
     }
-    
+
     @Test
     public void constructor_with_option_args_works_as_expected() {
         // given
@@ -131,12 +130,16 @@ public class WingtipsToLightStepLifecycleListenerTest {
         }
     }
 
-    @DataProvider(value = {
-        "NULL_SERVICE_NAME",
-        "NULL_ACCESS_TOKEN",
-        "NULL_SATELLITE_URL"
-    })
-    @Test
+    public static Stream<Arguments> constructor_with_option_args_throws_NPE_if_passed_null_options_DataProvider() {
+        return Stream.of(
+            Arguments.of(NullOptionScenario.NULL_SERVICE_NAME),
+            Arguments.of(NullOptionScenario.NULL_ACCESS_TOKEN),
+            Arguments.of(NullOptionScenario.NULL_SATELLITE_URL)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("constructor_with_option_args_throws_NPE_if_passed_null_options_DataProvider")
     public void constructor_with_option_args_throws_NPE_if_passed_null_options(NullOptionScenario scenario) {
         // when
         Throwable ex = catchThrowable(() -> new WingtipsToLightStepLifecycleListener(
@@ -167,13 +170,17 @@ public class WingtipsToLightStepLifecycleListenerTest {
         verifyZeroInteractions(jreTracerMock, spanMock);
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "false  |   true",
-        "true   |   false",
-        "false  |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> spanCompleted_should_create_and_complete_matching_opentracing_span_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("spanCompleted_should_create_and_complete_matching_opentracing_span_DataProvider")
     public void spanCompleted_should_create_and_complete_matching_opentracing_span(
         boolean spanHasParent,
         boolean useUnsanitizedIds
@@ -405,17 +412,14 @@ public class WingtipsToLightStepLifecycleListenerTest {
             this.expectedSanitizedResultForSpanIdOrParentSpanId = expectedSanitizedResultForSpanIdOrParentSpanId;
         }
     }
-
-    @DataProvider
     @SuppressWarnings("unused")
-    public static List<List<IdSanitizationScenario>> idSanitizationScenarios() {
+    public static Stream<Arguments> idSanitizationScenarios() {
         return Arrays.stream(IdSanitizationScenario.values())
-                     .map(Collections::singletonList)
-                     .collect(Collectors.toList());
+                     .map(Arguments::of);
     }
 
-    @UseDataProvider("idSanitizationScenarios")
-    @Test
+    @ParameterizedTest
+    @MethodSource("idSanitizationScenarios")
     public void sanitizeIdIfNecessary_sanitizes_ids_as_expected(
         IdSanitizationScenario scenario
     ) {
@@ -429,11 +433,16 @@ public class WingtipsToLightStepLifecycleListenerTest {
     }
 
     // Verify the method at a per-character level to catch all the branching logic.
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+
+    public static Stream<Arguments> isHex_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("isHex_works_as_expected_DataProvider")
     public void isHex_works_as_expected(boolean allowUppercase) {
         for (char c = Character.MIN_VALUE; c < Character.MAX_VALUE; c++) {
             // given
@@ -455,31 +464,36 @@ public class WingtipsToLightStepLifecycleListenerTest {
     }
 
     // Verify the attemptToConvertToLong method with various scenarios to catch branching logic and corner cases.
-    @DataProvider(value = {
-        "0                      |   true",
-        "1                      |   true",
-        "-1                     |   true",
-        "42                     |   true",
-        "-42                    |   true",
-        "2147483648             |   true",  // Greater than max int (but still in long range).
-        "-2147483649            |   true",  // Less than min int (but still in long range).
-        "9199999999999999999    |   true",  // Same num digits as max long, but digit before the end is less than same digit in max long.
-        "-9199999999999999999   |   true",  // Same num digits as min long, but digit before the end is less than same digit in min long.
-        "9223372036854775807    |   true",  // Exactly max long.
-        "-9223372036854775808   |   true",  // Exactly min long.
-        "9223372036854775808    |   false", // 1 bigger than max long.
-        "-9223372036854775809   |   false", // 1 less than min long.
-        "9300000000000000000    |   false", // Same num digits as max long, but digit before the end is greater than than same digit in max long.
-        "-9300000000000000000   |   false", // Same num digits as min long, but digit before the end is greater than than same digit in min long.
-        "10000000000000000000   |   false", // Too many digits (positive).
-        "-10000000000000000000  |   false", // Too many digits (negative).
-        "42blue42               |   false", // Contains non-digits.
-        "42f                    |   false", // Contains non-digits.
-        "4-2                    |   false", // Contains dash in a spot other than the beginning.
-        "42-                    |   false", // Contains dash in a spot other than the beginning.
-        "null                   |   false"  // Null can't be converted to a long.
-    }, splitBy = "\\|")
-    @Test
+
+    public static Stream<Arguments> attemptToConvertToLong_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("0", true),
+            Arguments.of("1", true),
+            Arguments.of("-1", true),
+            Arguments.of("42", true),
+            Arguments.of("-42", true),
+            Arguments.of("2147483648", true),
+            Arguments.of("-2147483649", true),
+            Arguments.of("9199999999999999999", true),
+            Arguments.of("-9199999999999999999", true),
+            Arguments.of("9223372036854775807", true),
+            Arguments.of("-9223372036854775808", true),
+            Arguments.of("9223372036854775808", false),
+            Arguments.of("-9223372036854775809", false),
+            Arguments.of("9300000000000000000", false),
+            Arguments.of("-9300000000000000000", false),
+            Arguments.of("10000000000000000000", false),
+            Arguments.of("-10000000000000000000", false),
+            Arguments.of("42blue42", false),
+            Arguments.of("42f", false),
+            Arguments.of("4-2", false),
+            Arguments.of("42-", false),
+            Arguments.of(null, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("attemptToConvertToLong_works_as_expected_DataProvider")
     public void attemptToConvertToLong_works_as_expected(String longAsString, boolean expectValidLongResult) {
         // given
         Long expectedResult = (expectValidLongResult) ? Long.parseLong(longAsString) : null;

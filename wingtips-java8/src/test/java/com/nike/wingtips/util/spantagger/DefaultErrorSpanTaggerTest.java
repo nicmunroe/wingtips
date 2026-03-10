@@ -3,31 +3,34 @@ package com.nike.wingtips.util.spantagger;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.tags.KnownZipkinTags;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link DefaultErrorSpanTagger}.
  */
-@RunWith(DataProviderRunner.class)
 public class DefaultErrorSpanTaggerTest {
 
-    @DataProvider(value = {
-        "false  |   false   |   true",
-        "true   |   false   |   false",
-        "false  |   true    |   false",
-        "true   |   true    |   false",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> tagSpanForError_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(false, false, true),
+            Arguments.of(true, false, false),
+            Arguments.of(false, true, false),
+            Arguments.of(true, true, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("tagSpanForError_works_as_expected_DataProvider")
     @SuppressWarnings("ConstantConditions")
     public void tagSpanForError_works_as_expected(boolean spanIsNull, boolean errorIsNull, boolean expectErrorTag) {
         // given

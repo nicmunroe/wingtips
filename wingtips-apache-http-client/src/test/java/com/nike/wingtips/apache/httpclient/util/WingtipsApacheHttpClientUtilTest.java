@@ -2,14 +2,10 @@ package com.nike.wingtips.apache.httpclient.util;
 
 import com.nike.wingtips.Span;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-
 import org.apache.http.HttpRequest;
 import org.apache.http.RequestLine;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -27,19 +23,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsApacheHttpClientUtil}.
  *
  * @author Nic Munroe
  */
-@RunWith(DataProviderRunner.class)
 public class WingtipsApacheHttpClientUtilTest {
 
     private HttpRequest requestMock;
     private RequestLine requestLineMock;
 
-    @Before
+    @BeforeEach
     public void beforeMethod() {
         requestMock = mock(HttpRequest.class);
         requestLineMock = mock(RequestLine.class);
@@ -53,13 +52,17 @@ public class WingtipsApacheHttpClientUtilTest {
         new WingtipsApacheHttpClientUtil();
     }
 
-    @DataProvider(value = {
-        "true   |   true",
-        "true   |   false",
-        "false  |   true",
-        "false  |   false"
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, true),
+            Arguments.of(false, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_works_as_expected_DataProvider")
     public void propagateTracingHeaders_works_as_expected(
         boolean requestIsNull, boolean spanIsNull
     ) {
@@ -94,11 +97,16 @@ public class WingtipsApacheHttpClientUtilTest {
     }
 
     // See https://github.com/openzipkin/b3-propagation - we should pass "1" if it's sampleable, "0" if it's not.
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+
+    public static Stream<Arguments> propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value_DataProvider")
     public void propagateTracingHeaders_uses_B3_spec_for_sampleable_header_value(
         boolean sampleable
     ) {
@@ -115,11 +123,15 @@ public class WingtipsApacheHttpClientUtilTest {
             .setHeader(TRACE_SAMPLED, convertSampleableBooleanToExpectedB3Value(span.isSampleable()));
     }
 
-    @DataProvider(value = {
-        "true",
-        "false"
-    })
-    @Test
+    public static Stream<Arguments> propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider() {
+        return Stream.of(
+            Arguments.of(true),
+            Arguments.of(false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists_DataProvider")
     public void propagateTracingHeaders_only_sends_parent_span_id_header_if_parent_span_id_exists(
         boolean parentSpanIdExists
     ) {
@@ -141,13 +153,17 @@ public class WingtipsApacheHttpClientUtilTest {
         }
     }
 
-    @DataProvider(value = {
-        "someHttpMethod  |   apachehttpclient_downstream_call-someHttpMethod",
-        "null            |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-        "                |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-        "[whitespace]    |   apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD",
-    }, splitBy = "\\|")
-    @Test
+    public static Stream<Arguments> getFallbackSubspanSpanName_works_as_expected_DataProvider() {
+        return Stream.of(
+            Arguments.of("someHttpMethod", "apachehttpclient_downstream_call-someHttpMethod"),
+            Arguments.of(null, "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of("", "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD"),
+            Arguments.of("[whitespace]", "apachehttpclient_downstream_call-UNKNOWN_HTTP_METHOD")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getFallbackSubspanSpanName_works_as_expected_DataProvider")
     public void getFallbackSubspanSpanName_works_as_expected(String httpMethod, String expectedResult) {
         // given
         if ("[whitespace]".equals(httpMethod)) {
