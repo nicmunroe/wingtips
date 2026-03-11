@@ -14,7 +14,7 @@ dependencies {
             "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
             "org.mockito:mockito-core:$mockitoVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
-            "org.assertj:assertj-core:$assertJForJava7Version",
+            "org.assertj:assertj-core:$assertJVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion",
             "javax.servlet:servlet-api:$oldServletApiTargetVersion",
             "org.mortbay.jetty:jetty:$oldMortbayJettyVersion",

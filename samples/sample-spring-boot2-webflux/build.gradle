@@ -19,6 +19,7 @@ dependencies {
     implementation(
         project(":wingtips-zipkin2-spring-boot2-webflux"),
         "ch.qos.logback:logback-classic:$logbackVersion",
+        "ch.qos.logback:logback-core:$logbackVersion",
         "org.springframework.boot:spring-boot-dependencies:$springboot2Version",
         "org.springframework.boot:spring-boot-starter-webflux",
     )
@@ -28,7 +29,6 @@ dependencies {
     testImplementation(
         "org.junit.jupiter:junit-jupiter:$junitJupiterVersion",
         "org.mockito:mockito-core:$mockitoVersion",
-        "ch.qos.logback:logback-classic:$logbackVersion",
         "org.assertj:assertj-core:$assertJVersion",
         "io.rest-assured:rest-assured:$restAssuredVersion",
         // Thanks Springboot BOM! :/

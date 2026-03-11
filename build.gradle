@@ -96,17 +96,16 @@ ext {
     jetbrainsAnnotationsVersion = '16.0.3'
 
     junitJupiterVersion = '5.10.5'
-    mockitoVersion = '3.4.4'
-    logbackVersion = '1.2.3'
-    jacksonVersion = '2.4.2'
-    assertJVersion = '3.22.0'
-    assertJForJava7Version = '2.9.1'
-    restAssuredVersion = '3.0.1'
-    apacheCommonsIoVersion = '2.5'
-    apacheCommonsLangVersion = '2.6'
+    mockitoVersion = '3.12.4'
+    logbackVersion = '1.2.13'
+    jacksonVersion = '2.18.6'
+    assertJVersion = '3.27.7'
+    restAssuredVersion = '4.5.1'
+    apacheCommonsIoVersion = '2.14.0'
+    apacheCommonsLang3Version = '3.18.0'
     jaxbApiVersion = '2.4.0-b180830.0359'
 
-    jettyVersion = '9.3.21.v20170918'
+    jettyVersion = '9.4.57.v20241219'
 
     // JACOCO PROPERTIES
     jacocoToolVersion = '0.8.14'

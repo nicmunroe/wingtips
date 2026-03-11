@@ -362,8 +362,9 @@ public class VerifySampleEndpointsComponentTest {
             "http://localhost:" + SERVER_PORT + ASYNC_TIMEOUT_PATH + "?foo=bar",
             null,
             response.statusCode(),
-            // This is the exception message that Jetty happens to put on the TimeoutException that gets thrown.
-            "Async API violation",
+            // Jetty 9.4+ no longer provides a Throwable on async timeout (getThrowable() returns null),
+            // so the error tag falls back to the HTTP status code via getErrorResponseTagValue().
+            "500",
             "servlet"
         );
     }

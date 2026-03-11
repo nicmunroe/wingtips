@@ -3,9 +3,6 @@ evaluationDependsOn(':')
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-ext {
-    jersey2Version = '2.23.2'
-}
 
 dependencies {
     implementation(
