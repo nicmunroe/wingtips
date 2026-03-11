@@ -28,4 +28,5 @@ dependencies {
             "javax.servlet:javax.servlet-api:$servletApiForTestsVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

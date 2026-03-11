@@ -23,4 +23,5 @@ dependencies {
             "org.jetbrains:annotations:$jetbrainsAnnotationsVersion",
             "org.apache.commons:commons-lang3:$apacheCommonsLang3Version"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

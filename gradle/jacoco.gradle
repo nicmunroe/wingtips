@@ -121,7 +121,7 @@ test.finalizedBy(zForceAllSubprojectTestsToRunDummyTask)
 // ========== CONSOLE COVERAGE SUMMARY OUTPUT
 
 // This method parses jacoco report XML to pull out the instruction coverage summary value and store it for later.
-def parseJacocoSummaryInfo(JacocoReport task, boolean isRootReport) {
+def parseJacocoSummaryInfo(JacocoReport task, boolean isRootReport, String projectName) {
     File xmlFile = task.reports.xml.getOutputLocation().getAsFile().getOrNull()
     if (xmlFile == null || !xmlFile.exists()) {
         return
@@ -147,7 +147,7 @@ def parseJacocoSummaryInfo(JacocoReport task, boolean isRootReport) {
         jacocoRootReportCoverageSummary = instructionPctCovered
     }
     else {
-        jacocoCoverageSummaries.put(task.project.name, instructionPctCovered)
+        jacocoCoverageSummaries.put(projectName, instructionPctCovered)
     }
 }
 
@@ -155,9 +155,11 @@ def parseJacocoSummaryInfo(JacocoReport task, boolean isRootReport) {
 //      so tell the subproject's jacoco report tasks to parse summary info and put it somewhere we can access at the
 //      end of the gradle build.
 configure(subprojectsToIncludeForJacocoComboReport(subprojects)) {
+    // Capture the project name at configuration time to avoid accessing task.project at execution time.
+    String projName = project.name
     jacocoTestReport {
         doLast { JacocoReport jr ->
-            parseJacocoSummaryInfo(jr, false)
+            parseJacocoSummaryInfo(jr, false, projName)
         }
     }
 }
@@ -165,7 +167,7 @@ configure(subprojectsToIncludeForJacocoComboReport(subprojects)) {
 // Do the same for the main project's combo root report.
 jacocoRootReport {
     doLast { JacocoReport jr ->
-        parseJacocoSummaryInfo(jr, true)
+        parseJacocoSummaryInfo(jr, true, null)
     }
 }
 

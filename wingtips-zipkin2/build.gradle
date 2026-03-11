@@ -20,4 +20,5 @@ dependencies {
             "org.assertj:assertj-core:$assertJVersion",
             "io.zipkin.zipkin2:zipkin-junit:$zipkin2Version"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

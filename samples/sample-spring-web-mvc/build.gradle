@@ -1,7 +1,9 @@
 evaluationDependsOn(':')
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 
 dependencies {
@@ -25,10 +27,13 @@ dependencies {
             // The jaxb-api is needed for building on the java 11 JDK as these classes were moved out of the Java SE libs.
             "javax.xml.bind:jaxb-api:$jaxbApiVersion",
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }
 
 apply plugin: "application"
-mainClassName = "com.nike.wingtips.springsample.Main"
+application {
+    mainClass = "com.nike.wingtips.springsample.Main"
+}
 
 run {
     systemProperties = System.getProperties()

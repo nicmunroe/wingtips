@@ -9,11 +9,16 @@ buildscript {
     }
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 apply plugin: 'org.springframework.boot'
 apply plugin: "io.spring.dependency-management"
+
+// Override Spring Boot BOM's JUnit version to prevent it from downgrading our explicit JUnit 5 dependencies.
+ext['junit-jupiter.version'] = junitJupiterVersion
 
 dependencies {
     implementation(
@@ -38,10 +43,13 @@ dependencies {
         // The jaxb-api is needed for building on the java 11 JDK as these classes were moved out of the Java SE libs.
         "javax.xml.bind:jaxb-api:$jaxbApiVersion",
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }
 
 apply plugin: "application"
-mainClassName = "com.nike.wingtips.springboot2webfluxsample.Main"
+application {
+    mainClass = "com.nike.wingtips.springboot2webfluxsample.Main"
+}
 
 run {
     systemProperties = System.getProperties()

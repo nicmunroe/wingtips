@@ -25,4 +25,5 @@ dependencies {
             "commons-io:commons-io:$apacheCommonsIoVersion",
             "org.springframework.boot:spring-boot-starter-web:$springboot1Version"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

@@ -24,4 +24,5 @@ dependencies {
             "org.assertj:assertj-core:$assertJVersion",
             "ch.qos.logback:logback-classic:$logbackVersion",
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

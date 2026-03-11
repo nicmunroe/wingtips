@@ -27,4 +27,5 @@ dependencies {
             "org.springframework.boot:spring-boot-starter-web:$springboot1Version",
             "javax.servlet:javax.servlet-api:$servletApiForTestsVersion"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

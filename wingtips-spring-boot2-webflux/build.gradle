@@ -1,7 +1,9 @@
 evaluationDependsOn(':')
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 dependencies {
     api(
@@ -21,4 +23,5 @@ dependencies {
             "io.rest-assured:rest-assured:$restAssuredVersion",
             "org.springframework.boot:spring-boot-starter-webflux:$springboot2Version",
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }

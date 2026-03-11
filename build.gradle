@@ -51,20 +51,22 @@ allprojects {
 
         // Minimize console spam while running tests without swallowing critical debugging info.
         testLogging {
-            exceptionFormat "FULL"
+            exceptionFormat = "FULL"
             events "skipped", "failed"
             displayGranularity = 0
-            showExceptions true
-            showCauses true
-            showStackTraces true
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
         }
 
         ignoreFailures = false
     }
 
     // http://www.gradle.org/docs/current/userguide/java_plugin.html
-    sourceCompatibility = JavaVersion.VERSION_1_7
-    targetCompatibility = JavaVersion.VERSION_1_7
+    java {
+        sourceCompatibility = JavaVersion.VERSION_1_7
+        targetCompatibility = JavaVersion.VERSION_1_7
+    }
 }
 
 // Disable jar, sourcesJar, and javadoc tasks for the root project - we only want them to run for submodules
@@ -95,7 +97,15 @@ ext {
 
     jetbrainsAnnotationsVersion = '24.1.0'
 
-    junitJupiterVersion = '5.10.5'
+    // We can't go to junit 5.12 or later because we cannot build on java 17.
+    // Also, JUnit Jupiter and JUnit Platform versions need to be kept in sync with each other.
+    // For a given JUnit release, Jupiter uses version 5.x.y and Platform uses 1.x.y (same minor.patch).
+    // See the "Dependency Metadata" section of the JUnit 5 User Guide for whichever version of JUnit 5 we want
+    // to use. For example, for JUnit 5.11.4, the corresponding Platform version is 1.11.4 and the User Guide
+    // section is found at:
+    //   https://docs.junit.org/5.11.4/user-guide/#dependency-metadata
+    junitJupiterVersion = '5.11.4'
+    junitPlatformVersion = '1.11.4'
     mockitoVersion = '3.12.4'
     logbackVersion = '1.2.13'
     jacksonVersion = '2.18.6'

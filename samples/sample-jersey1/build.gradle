@@ -1,7 +1,9 @@
 evaluationDependsOn(':')
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 ext {
     jersey1Version = '1.19.4'
@@ -22,10 +24,13 @@ dependencies {
             "org.assertj:assertj-core:$assertJVersion",
             "io.rest-assured:rest-assured:$restAssuredVersion"
     )
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 }
 
 apply plugin: "application"
-mainClassName = "com.nike.wingtips.jersey1sample.Main"
+application {
+    mainClass = "com.nike.wingtips.jersey1sample.Main"
+}
 
 run {
     systemProperties = System.getProperties()
