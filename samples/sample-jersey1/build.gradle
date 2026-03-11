@@ -4,7 +4,7 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 ext {
-    jersey1Version = '1.19.2'
+    jersey1Version = '1.19.4'
 }
 
 dependencies {

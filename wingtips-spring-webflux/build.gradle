@@ -5,7 +5,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 ext {
     // This should match the version of Project Reactor pulled in by whatever springboot2Version is using.
-    projectReactorVersion = '3.2.12.RELEASE'
+    projectReactorVersion = '3.4.34'
 }
 
 dependencies {
