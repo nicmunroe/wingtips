@@ -36,7 +36,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -158,7 +158,7 @@ public class WingtipsToLightStepLifecycleListenerTest {
         listener.spanStarted(spanMock);
 
         // then
-        verifyZeroInteractions(jreTracerMock, spanMock);
+        verifyNoInteractions(jreTracerMock, spanMock);
     }
 
     @Test
@@ -167,7 +167,7 @@ public class WingtipsToLightStepLifecycleListenerTest {
         listener.spanSampled(spanMock);
 
         // then
-        verifyZeroInteractions(jreTracerMock, spanMock);
+        verifyNoInteractions(jreTracerMock, spanMock);
     }
 
     public static Stream<Arguments> spanCompleted_should_create_and_complete_matching_opentracing_span_DataProvider() {

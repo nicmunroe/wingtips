@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -113,7 +113,7 @@ public class WingtipsToZipkinLifecycleListenerTest {
         listener.spanStarted(spanMock);
 
         // then
-        verifyZeroInteractions(spanConverterMock, spanReporterMock, spanMock);
+        verifyNoInteractions(spanConverterMock, spanReporterMock, spanMock);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class WingtipsToZipkinLifecycleListenerTest {
         listener.spanSampled(spanMock);
 
         // then
-        verifyZeroInteractions(spanConverterMock, spanReporterMock, spanMock);
+        verifyNoInteractions(spanConverterMock, spanReporterMock, spanMock);
     }
 
     @Test
@@ -149,7 +149,7 @@ public class WingtipsToZipkinLifecycleListenerTest {
 
         // then
         verify(spanConverterMock).convertWingtipsSpanToZipkinSpan(spanMock, listener.zipkinEndpoint);
-        verifyZeroInteractions(spanReporterMock);
+        verifyNoInteractions(spanReporterMock);
         assertThat(ex).isNull();
     }
 
@@ -200,7 +200,7 @@ public class WingtipsToZipkinLifecycleListenerTest {
         listener.spanCompleted(spanMock);
 
         // then
-        verifyZeroInteractions(loggerMock);
+        verifyNoInteractions(loggerMock);
         // Also verify that the lastSpanHandlingErrorLogTimeEpochMillis value was *not* updated.
         assertThat((long)Whitebox.getInternalState(listener, "lastSpanHandlingErrorLogTimeEpochMillis")).isEqualTo(lastLogTimeToSet);
     }

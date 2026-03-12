@@ -51,7 +51,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -358,7 +358,7 @@ public class WingtipsSpringUtilTest {
 
         // then
         if (httpMessageIsNull || spanIsNull) {
-            verifyZeroInteractions(headersMock);
+            verifyNoInteractions(headersMock);
         }
         else {
             verify(headersMock).set(TRACE_ID, span.getTraceId());

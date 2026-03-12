@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Tests the functionality of {@link SpanMutator}.
@@ -45,6 +45,6 @@ public class SpanMutatorTest {
         SpanMutator.changeSpanName(spanMock, null);
 
         // then
-        verifyZeroInteractions(spanMock);
+        verifyNoInteractions(spanMock);
     }
 }

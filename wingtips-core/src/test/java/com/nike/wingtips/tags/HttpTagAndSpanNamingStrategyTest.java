@@ -22,7 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -67,7 +67,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         assertThat(result).isEqualTo(delegateMethodResult);
         verify(implSpy).doGetInitialSpanName(requestObjectMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestObjectMock, adapterMock);
+        verifyNoInteractions(requestObjectMock, adapterMock);
     }
 
     private static final Span staticSpanMock = mock(Span.class);
@@ -113,12 +113,12 @@ public class HttpTagAndSpanNamingStrategyTest {
 
         // then
         assertThat(result).isNull();
-        verifyZeroInteractions(implSpy);
+        verifyNoInteractions(implSpy);
         if (requestObjectMock != null) {
-            verifyZeroInteractions(requestObjectMock);
+            verifyNoInteractions(requestObjectMock);
         }
         if (adapterMock != null) {
-            verifyZeroInteractions(adapterMock);
+            verifyNoInteractions(adapterMock);
         }
     }
 
@@ -135,7 +135,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         assertThat(result).isNull();
         verify(implSpy).doGetInitialSpanName(requestObjectMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestObjectMock, adapterMock);
+        verifyNoInteractions(requestObjectMock, adapterMock);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         // then
         verify(implSpy).doHandleRequestTagging(spanMock, requestObjectMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, adapterMock);
     }
 
     public static Stream<Arguments> handleRequestTagging_does_nothing_in_null_arg_corner_cases_DataProvider() {
@@ -175,15 +175,15 @@ public class HttpTagAndSpanNamingStrategyTest {
         implSpy.handleRequestTagging(spanMock, requestObjectMock, adapterMock);
 
         // then
-        verifyZeroInteractions(implSpy);
+        verifyNoInteractions(implSpy);
         if (spanMock != null) {
-            verifyZeroInteractions(spanMock);
+            verifyNoInteractions(spanMock);
         }
         if (requestObjectMock != null) {
-            verifyZeroInteractions(requestObjectMock);
+            verifyNoInteractions(requestObjectMock);
         }
         if (adapterMock != null) {
-            verifyZeroInteractions(adapterMock);
+            verifyNoInteractions(adapterMock);
         }
     }
 
@@ -199,7 +199,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         // then
         verify(implSpy).doHandleRequestTagging(spanMock, requestObjectMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, adapterMock);
     }
 
     @Test
@@ -231,7 +231,7 @@ public class HttpTagAndSpanNamingStrategyTest {
             spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock
         );
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
     }
 
     public static Stream<Arguments> handleResponseTaggingAndFinalSpanName_does_nothing_in_null_arg_corner_cases_DataProvider() {
@@ -257,14 +257,14 @@ public class HttpTagAndSpanNamingStrategyTest {
         );
 
         // then
-        verifyZeroInteractions(implSpy);
+        verifyNoInteractions(implSpy);
         if (spanMock != null) {
-            verifyZeroInteractions(spanMock);
+            verifyNoInteractions(spanMock);
         }
         if (adapterMock != null) {
-            verifyZeroInteractions(adapterMock);
+            verifyNoInteractions(adapterMock);
         }
-        verifyZeroInteractions(requestObjectMock, responseObjectMock, errorMock);
+        verifyNoInteractions(requestObjectMock, responseObjectMock, errorMock);
     }
 
     @Test
@@ -297,7 +297,7 @@ public class HttpTagAndSpanNamingStrategyTest {
             spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock
         );
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
     }
 
     @Test
@@ -330,7 +330,7 @@ public class HttpTagAndSpanNamingStrategyTest {
             spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock
         );
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
     }
 
     @Test
@@ -363,7 +363,7 @@ public class HttpTagAndSpanNamingStrategyTest {
             spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock
         );
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
     }
 
     @Test
@@ -467,7 +467,7 @@ public class HttpTagAndSpanNamingStrategyTest {
 
         // then
         verify(implSpy).putTagIfValueIsNotBlank(spanMock, WingtipsTags.SPAN_HANDLER, blankAdapterResult);
-        verifyZeroInteractions(spanMock);
+        verifyNoInteractions(spanMock);
     }
 
     @Test

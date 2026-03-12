@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Tests the functionality of {@link NoOpHttpTagStrategy}.
@@ -52,7 +52,7 @@ public class NoOpHttpTagStrategyTest {
         assertThat(result).isNull();
         verify(implSpy).doGetInitialSpanName(requestMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock, adapterMock);
+        verifyNoInteractions(requestMock, adapterMock);
     }
 
     @Test
@@ -63,7 +63,7 @@ public class NoOpHttpTagStrategyTest {
         // then
         verify(implSpy).doDetermineAndSetFinalSpanName(spanMock, requestMock, responseMock, errorMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class NoOpHttpTagStrategyTest {
         // then
         verify(implSpy).doHandleRequestTagging(spanMock, requestMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestMock, adapterMock);
+        verifyNoInteractions(spanMock, requestMock, adapterMock);
     }
 
     @Test
@@ -85,7 +85,7 @@ public class NoOpHttpTagStrategyTest {
         // then
         verify(implSpy).doHandleResponseAndErrorTagging(spanMock, requestMock, responseMock, errorMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class NoOpHttpTagStrategyTest {
         // then
         verify(implSpy).doExtraWingtipsTagging(spanMock, requestMock, responseMock, errorMock, adapterMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
+        verifyNoInteractions(spanMock, requestMock, responseMock, errorMock, adapterMock);
     }
 
 }

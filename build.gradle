@@ -76,7 +76,7 @@ javadocJar.enabled = false
 
 // ========== PROPERTIES FOR GRADLE BUILD - DEPENDENCY VERSIONS / ETC
 ext {
-    slf4jVersion = '1.7.35'
+    slf4jVersion = '1.7.36'
     servletApiVersion = '3.0.1'
     zipkin2Version = '2.24.4'
     zipkin2ReporterVersion = '2.17.2'
@@ -85,8 +85,8 @@ ext {
     springboot1Version = '1.5.22.RELEASE'
     springboot2Version = '2.7.18'
     apacheHttpClientVersion = '4.5.14'
-    apacheCommonsCodecVersion = '1.17.2'
-    jersey2Version = '2.41'
+    apacheCommonsCodecVersion = '1.21.0'
+    jersey2Version = '2.47'
 
     lightstepTracerVersion = '0.15.4'
     lightstepHttpVersion = '0.16.2'
@@ -95,7 +95,7 @@ ext {
 
     nikeInternalUtilVersion = '0.9.0.1'
 
-    jetbrainsAnnotationsVersion = '24.1.0'
+    jetbrainsAnnotationsVersion = '26.0.2'
 
     // We can't go to junit 5.12 or later because we cannot build on java 17.
     // Also, JUnit Jupiter and JUnit Platform versions need to be kept in sync with each other.
@@ -111,8 +111,8 @@ ext {
     jacksonVersion = '2.18.6'
     assertJVersion = '3.27.7'
     restAssuredVersion = '4.5.1'
-    apacheCommonsIoVersion = '2.14.0'
-    apacheCommonsLang3Version = '3.18.0'
+    apacheCommonsIoVersion = '2.21.0'
+    apacheCommonsLang3Version = '3.20.0'
     jaxbApiVersion = '2.3.1'
 
     jettyVersion = '9.4.57.v20241219'

@@ -33,7 +33,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -493,10 +493,10 @@ public class HttpRequestTracingUtilsTest {
         // then
         if (httpObjIsNull || spanIsNull) {
             if (httpObjectForPropagationMock != null)
-                verifyZeroInteractions(httpObjectForPropagationMock);
+                verifyNoInteractions(httpObjectForPropagationMock);
 
             if (spanSpy != null)
-                verifyZeroInteractions(spanSpy);
+                verifyNoInteractions(spanSpy);
         }
         else {
             verify(httpObjectForPropagationMock).setHeader(TRACE_ID, spanSpy.getTraceId());
@@ -640,7 +640,7 @@ public class HttpRequestTracingUtilsTest {
         verify(adapterMock).getRequestUriPathTemplate(requestMock, responseMock);
         verify(adapterMock).getResponseHttpStatus(responseMock);
         verifyNoMoreInteractions(adapterMock);
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
     @Test
@@ -654,7 +654,7 @@ public class HttpRequestTracingUtilsTest {
 
         // then
         assertThat(result).isEqualTo("UNKNOWN_HTTP_METHOD");
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
     public static Stream<Arguments> getFallbackSpanNameForHttpRequest_works_as_expected_DataProvider() {

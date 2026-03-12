@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Tests the functionality of {@link NoOpHttpTagAdapter}.
@@ -45,7 +45,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getErrorResponseTagValue(responseMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(responseMock);
+        verifyNoInteractions(responseMock);
     }
 
     @Test
@@ -57,7 +57,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getRequestUrl(requestMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -69,7 +69,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getRequestPath(requestMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -81,7 +81,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getResponseHttpStatus(responseMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(responseMock);
+        verifyNoInteractions(responseMock);
     }
 
     @Test
@@ -93,7 +93,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getRequestHttpMethod(requestMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getHeaderSingleValue(requestMock, "foo");
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getHeaderMultipleValue(requestMock, "foo");
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -129,7 +129,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getSpanNamePrefix(requestMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getInitialSpanName(requestMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock);
+        verifyNoInteractions(requestMock);
     }
 
     @Test
@@ -153,7 +153,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getFinalSpanName(requestMock, responseMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getRequestUriPathTemplate(requestMock, responseMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
     @Test
@@ -177,7 +177,7 @@ public class NoOpHttpTagAdapterTest {
         assertThat(result).isNull();
         verify(implSpy).getSpanHandlerTagValue(requestMock, responseMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
 }

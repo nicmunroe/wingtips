@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -882,7 +882,7 @@ public class SpanTest {
 
         // then
         assertThat(resultingBuilder).isSameAs(builder);
-        verifyZeroInteractions(tagsMapSpy);
+        verifyNoInteractions(tagsMapSpy);
 
         // and when
         Span resultingSpan = resultingBuilder.build();
@@ -903,7 +903,7 @@ public class SpanTest {
 
         // then
         assertThat(resultingBuilder).isSameAs(builder);
-        verifyZeroInteractions(annotationsListSpy);
+        verifyNoInteractions(annotationsListSpy);
 
         // and when
         Span resultingSpan = resultingBuilder.build();

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Tests the functionality of {@link SpanCustomizingApplicationEventListener}.
@@ -43,6 +43,10 @@ public class SpanCustomizingApplicationEventListenerTest {
 
     @BeforeEach
     public void beforeMethod() {
+        setupMocks();
+    }
+
+    private void setupMocks() {
         implSpy = spy(SpanCustomizingApplicationEventListener.create());
         requestEventMock = mock(RequestEvent.class);
         requestMock = mock(ContainerRequest.class);
@@ -76,7 +80,7 @@ public class SpanCustomizingApplicationEventListenerTest {
         // then
         verify(implSpy).onEvent(eventMock);
         verifyNoMoreInteractions(implSpy);
-        verifyZeroInteractions(eventMock);
+        verifyNoInteractions(eventMock);
     }
 
     @Test
@@ -103,6 +107,7 @@ public class SpanCustomizingApplicationEventListenerTest {
     public void onEvent_for_RequestEvent_handles_REQUEST_MATCHED_only_and_sets_HTTP_ROUTE_to_result_of_route_method() {
         for (RequestEvent.Type type : RequestEvent.Type.values()) {
             // given
+            setupMocks();
             doReturn(type).when(requestEventMock).getType();
 
             boolean expectHandled = (type == RequestEvent.Type.REQUEST_MATCHED);
@@ -118,7 +123,7 @@ public class SpanCustomizingApplicationEventListenerTest {
                 verify(requestMock).setProperty(KnownZipkinTags.HTTP_ROUTE, routeMethodResult);
             }
             else {
-                verifyZeroInteractions(requestMock);
+                verifyNoInteractions(requestMock);
             }
         }
     }

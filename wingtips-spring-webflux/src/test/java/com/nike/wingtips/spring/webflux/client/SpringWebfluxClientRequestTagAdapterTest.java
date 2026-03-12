@@ -17,7 +17,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -143,7 +143,7 @@ public class SpringWebfluxClientRequestTagAdapterTest {
     public void getRequestUriPathTemplate_returns_null() {
         // expect
         assertThat(implSpy.getRequestUriPathTemplate(requestMock, responseMock)).isNull();
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 
     @Test
@@ -232,6 +232,6 @@ public class SpringWebfluxClientRequestTagAdapterTest {
     public void getSpanHandlerTagValue_works_as_expected() {
         // expect
         assertThat(implSpy.getSpanHandlerTagValue(requestMock, responseMock)).isEqualTo("spring.webflux.client");
-        verifyZeroInteractions(requestMock, responseMock);
+        verifyNoInteractions(requestMock, responseMock);
     }
 }
