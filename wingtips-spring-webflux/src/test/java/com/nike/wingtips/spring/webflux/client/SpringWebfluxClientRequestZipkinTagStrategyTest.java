@@ -6,21 +6,18 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.KnownZipkinTags;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.web.reactive.function.client.ClientRequest;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.nike.wingtips.spring.webflux.client.SpringWebfluxClientRequestZipkinTagStrategy.SPRING_LOG_ID_TAG_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link SpringWebfluxClientRequestZipkinTagStrategy}.

@@ -7,19 +7,16 @@ import com.nike.wingtips.util.spantagger.ErrorSpanTagger;
 import com.nike.wingtips.util.spantagger.SpanTagger;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link OperationWrapperOptions}.

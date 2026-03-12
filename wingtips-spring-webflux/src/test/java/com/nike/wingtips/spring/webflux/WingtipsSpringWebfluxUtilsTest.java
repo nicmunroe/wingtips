@@ -7,10 +7,14 @@ import com.nike.wingtips.util.TracingState;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.web.server.ServerWebExchange;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import reactor.util.context.Context;
 
@@ -19,10 +23,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsSpringWebfluxUtils}.

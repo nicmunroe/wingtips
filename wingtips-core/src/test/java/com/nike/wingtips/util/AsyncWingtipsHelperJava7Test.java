@@ -13,6 +13,9 @@ import com.nike.wingtips.util.asynchelperwrapper.ScheduledExecutorServiceWithTra
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.MDC;
 
 import java.util.Collections;
@@ -23,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Stream;
 
 import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.callableWithTracing;
 import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.executorServiceWithTracing;
@@ -32,10 +36,6 @@ import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.scheduledExecutorS
 import static com.nike.wingtips.util.AsyncWingtipsHelperJava7.unlinkTracingFromCurrentThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link AsyncWingtipsHelperJava7}.

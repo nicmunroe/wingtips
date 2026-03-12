@@ -12,11 +12,13 @@ import com.nike.wingtips.springbootsample.controller.SampleController.SpanInfoDt
 import com.nike.wingtips.tags.KnownZipkinTags;
 import com.nike.wingtips.tags.WingtipsTags;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -31,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.restassured.response.ExtractableResponse;
 
@@ -56,10 +59,6 @@ import static com.nike.wingtips.springbootsample.controller.SampleController.WIL
 import static com.nike.wingtips.springbootsample.controller.SampleController.WILDCARD_RESULT;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Component test that starts up the sample server and hits it with various requests and verifies that the expected

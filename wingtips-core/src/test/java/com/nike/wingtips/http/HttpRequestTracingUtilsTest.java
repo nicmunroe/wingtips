@@ -8,6 +8,9 @@ import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +19,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
 import static com.nike.wingtips.TraceHeaders.SPAN_ID;
@@ -23,21 +27,17 @@ import static com.nike.wingtips.TraceHeaders.TRACE_ID;
 import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
 import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyNoInteractions;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import java.util.stream.Stream;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * Tests the functionality of {@link HttpRequestTracingUtils}

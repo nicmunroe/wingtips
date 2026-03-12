@@ -4,9 +4,13 @@ import com.nike.wingtips.Span;
 import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.Tracer;
 import com.nike.wingtips.util.TracingState;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 
@@ -23,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static com.nike.wingtips.util.asynchelperwrapper.ScheduledExecutorServiceWithTracing.withTracing;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,10 +40,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link ScheduledExecutorServiceWithTracing}.

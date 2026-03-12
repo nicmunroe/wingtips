@@ -9,6 +9,9 @@ import com.nike.wingtips.springboot.componenttest.manualimportandcomponentscan.C
 import com.nike.wingtips.springboot.componenttest.manualimportonly.ComponentTestMainManualImportOnly;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -19,6 +22,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -32,12 +36,8 @@ import static com.nike.wingtips.servlet.RequestTracingFilter.USER_ID_HEADER_KEYS
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyNoInteractions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * Tests the functionality of {@link WingtipsSpringBootConfiguration}.

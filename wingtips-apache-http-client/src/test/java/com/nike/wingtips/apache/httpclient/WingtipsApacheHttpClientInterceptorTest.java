@@ -3,11 +3,11 @@ package com.nike.wingtips.apache.httpclient;
 import com.nike.wingtips.Span;
 import com.nike.wingtips.Span.SpanPurpose;
 import com.nike.wingtips.Tracer;
+import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
 import com.nike.wingtips.apache.httpclient.testutils.ArgCapturingHttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.apache.httpclient.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.InitialSpanNameArgs;
 import com.nike.wingtips.apache.httpclient.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.RequestTaggingArgs;
 import com.nike.wingtips.apache.httpclient.testutils.ArgCapturingHttpTagAndSpanNamingStrategy.ResponseTaggingArgs;
-import com.nike.wingtips.apache.httpclient.tag.ApacheHttpClientTagAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingAdapter;
 import com.nike.wingtips.tags.HttpTagAndSpanNamingStrategy;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
@@ -26,6 +26,9 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.MDC;
 
 import java.util.List;
@@ -33,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.nike.wingtips.TraceHeaders.PARENT_SPAN_ID;
 import static com.nike.wingtips.TraceHeaders.SPAN_ID;
@@ -53,10 +57,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsApacheHttpClientInterceptor}.

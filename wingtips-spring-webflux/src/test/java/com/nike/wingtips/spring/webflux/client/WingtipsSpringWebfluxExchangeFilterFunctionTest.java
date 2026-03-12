@@ -21,6 +21,9 @@ import com.nike.wingtips.util.TracingState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.reactivestreams.Subscription;
 import org.springframework.http.HttpHeaders;
@@ -31,8 +34,6 @@ import org.springframework.web.reactive.function.client.ExchangeFunction;
 
 import java.net.URI;
 import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -68,9 +69,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Tests the functionality of {@link WingtipsSpringWebfluxExchangeFilterFunction}.

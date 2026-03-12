@@ -7,11 +7,15 @@ import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverterDefaultImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import zipkin2.Endpoint;
 import zipkin2.reporter.AsyncReporter;
@@ -21,21 +25,16 @@ import zipkin2.reporter.urlconnection.URLConnectionSender;
 import static com.nike.wingtips.zipkin2.WingtipsToZipkinLifecycleListener.MIN_SPAN_HANDLING_ERROR_LOG_INTERVAL_MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyNoInteractions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsToZipkinLifecycleListener}

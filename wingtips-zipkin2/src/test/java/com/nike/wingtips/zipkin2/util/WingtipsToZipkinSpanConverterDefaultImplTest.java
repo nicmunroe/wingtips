@@ -7,11 +7,13 @@ import com.nike.wingtips.TraceAndSpanIdGenerator;
 import com.nike.wingtips.testutil.Whitebox;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import zipkin2.Annotation;
 import zipkin2.Endpoint;
@@ -26,10 +29,6 @@ import zipkin2.Endpoint;
 import static com.nike.wingtips.TraceAndSpanIdGenerator.generateId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsToZipkinSpanConverterDefaultImpl}.

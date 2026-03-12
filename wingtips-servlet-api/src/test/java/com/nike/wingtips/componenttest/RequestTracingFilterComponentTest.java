@@ -14,11 +14,14 @@ import com.nike.wingtips.tags.WingtipsTags;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -31,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -44,10 +48,6 @@ import io.restassured.response.ExtractableResponse;
 import static com.nike.wingtips.http.HttpRequestTracingUtils.CHILD_OF_SPAN_FROM_HEADERS_WHERE_CALLER_DID_NOT_SEND_SPAN_ID_TAG_KEY;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Component test to verify that {@link RequestTracingFilter} works as expected when deployed to a real running server.

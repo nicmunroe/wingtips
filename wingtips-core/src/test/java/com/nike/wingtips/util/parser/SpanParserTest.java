@@ -15,6 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.MDC;
 
 import java.io.IOException;
@@ -27,16 +30,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.nike.wingtips.SpanTest.verifySpanDeepEquals;
 import static com.nike.wingtips.SpanTest.verifySpanEqualsDeserializedValues;
 import static com.nike.wingtips.TestSpanCompleter.completeSpan;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import java.util.stream.Stream;
 
 public class SpanParserTest {
 

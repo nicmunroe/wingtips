@@ -15,11 +15,13 @@ import com.nike.wingtips.tags.WingtipsTags;
 import com.nike.wingtips.tags.ZipkinHttpTagStrategy;
 
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.MDC;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -45,6 +47,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -52,10 +55,6 @@ import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplate
 import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest.TestBackendServer.ENDPOINT_PAYLOAD;
 import static com.nike.wingtips.componenttest.SpringAsyncAndBlockingRestTemplateWithWingtipsComponentTest.TestBackendServer.SLEEP_TIME_MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Component test validating Wingtips' integration with Spring {@link RestTemplate} and {@link AsyncRestTemplate}.

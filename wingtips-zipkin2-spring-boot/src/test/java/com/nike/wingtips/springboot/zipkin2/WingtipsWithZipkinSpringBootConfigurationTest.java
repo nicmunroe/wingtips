@@ -19,6 +19,9 @@ import com.nike.wingtips.zipkin2.util.WingtipsToZipkinSpanConverterDefaultImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
@@ -29,6 +32,7 @@ import java.net.ServerSocket;
 import java.net.URL;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import zipkin2.Endpoint;
 import zipkin2.Span;
@@ -41,10 +45,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 /**
  * Tests the functionality of {@link WingtipsWithZipkinSpringBootConfiguration}.
