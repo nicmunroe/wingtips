@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -58,7 +58,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         // given
         String delegateMethodResult = UUID.randomUUID().toString();
         doReturn(delegateMethodResult)
-            .when(implSpy).doGetInitialSpanName(anyObject(), any(HttpTagAndSpanNamingAdapter.class));
+            .when(implSpy).doGetInitialSpanName(any(), any(HttpTagAndSpanNamingAdapter.class));
 
         // when
         String result = implSpy.getInitialSpanName(requestObjectMock, adapterMock);
@@ -126,7 +126,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void getInitialSpanName_returns_null_if_delegate_method_throws_exception() {
         // given
         doThrow(new RuntimeException("boom"))
-            .when(implSpy).doGetInitialSpanName(anyObject(), any(HttpTagAndSpanNamingAdapter.class));
+            .when(implSpy).doGetInitialSpanName(any(), any(HttpTagAndSpanNamingAdapter.class));
 
         // when
         String result = implSpy.getInitialSpanName(requestObjectMock, adapterMock);
@@ -142,7 +142,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleRequestTagging_defers_to_doHandleRequestTagging() {
         // given
         doNothing().when(implSpy).doHandleRequestTagging(
-            any(Span.class), anyObject(), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         // when
@@ -191,7 +191,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleRequestTagging_does_nothing_if_delegate_method_throws_exception() {
         // given
         doThrow(new RuntimeException("boom"))
-            .when(implSpy).doHandleRequestTagging(any(Span.class), anyObject(), any(HttpTagAndSpanNamingAdapter.class));
+            .when(implSpy).doHandleRequestTagging(any(Span.class), any(), any(HttpTagAndSpanNamingAdapter.class));
 
         // when
         implSpy.handleRequestTagging(spanMock, requestObjectMock, adapterMock);
@@ -206,13 +206,13 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleResponseTaggingAndFinalSpanName_defers_to_doHandleResponseAndErrorTagging_and_doDetermineAndSetFinalSpanName_and_doExtraWingtipsTagging() {
         // given
         doNothing().when(implSpy).doHandleResponseAndErrorTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
         doNothing().when(implSpy).doDetermineAndSetFinalSpanName(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
         doNothing().when(implSpy).doExtraWingtipsTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         // when
@@ -271,14 +271,14 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleResponseTaggingAndFinalSpanName_executes_other_two_delegates_when_doHandleResponseAndErrorTagging_throws_exception() {
         // given
         doThrow(new RuntimeException("boom")).when(implSpy).doHandleResponseAndErrorTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         doNothing().when(implSpy).doDetermineAndSetFinalSpanName(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
         doNothing().when(implSpy).doExtraWingtipsTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         // when
@@ -304,14 +304,14 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleResponseTaggingAndFinalSpanName_executes_other_two_delegates_when_doDetermineAndSetFinalSpanName_throws_exception() {
         // given
         doThrow(new RuntimeException("boom")).when(implSpy).doDetermineAndSetFinalSpanName(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         doNothing().when(implSpy).doHandleResponseAndErrorTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
         doNothing().when(implSpy).doExtraWingtipsTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         // when
@@ -337,14 +337,14 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void handleResponseTaggingAndFinalSpanName_executes_other_two_delegates_when_doExtraWingtipsTagging_throws_exception() {
         // given
         doThrow(new RuntimeException("boom")).when(implSpy).doExtraWingtipsTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         doNothing().when(implSpy).doHandleResponseAndErrorTagging(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
         doNothing().when(implSpy).doDetermineAndSetFinalSpanName(
-            any(Span.class), anyObject(), anyObject(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
+            any(Span.class), any(), any(), any(Throwable.class), any(HttpTagAndSpanNamingAdapter.class)
         );
 
         // when
@@ -370,7 +370,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void doGetInitialSpanName_delegates_to_adapter_getInitialSpanName() {
         // given
         String adapterResult = UUID.randomUUID().toString();
-        doReturn(adapterResult).when(adapterMock).getInitialSpanName(anyObject());
+        doReturn(adapterResult).when(adapterMock).getInitialSpanName(any());
 
         // when
         String result = implSpy.doGetInitialSpanName(requestObjectMock, adapterMock);
@@ -383,7 +383,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void doDetermineAndSetFinalSpanName_delegates_to_adapter_getFinalSpanName_and_changes_span_name_if_result_is_not_blank() {
         // given
         String adapterSpanNameResult = UUID.randomUUID().toString();
-        doReturn(adapterSpanNameResult).when(adapterMock).getFinalSpanName(anyObject(), anyObject());
+        doReturn(adapterSpanNameResult).when(adapterMock).getFinalSpanName(any(), any());
 
         Span span = Span.newBuilder("originalSpanName", SpanPurpose.SERVER).build();
 
@@ -415,7 +415,7 @@ public class HttpTagAndSpanNamingStrategyTest {
             blankAdapterResult = "   \n\r\t   ";
         }
 
-        doReturn(blankAdapterResult).when(adapterMock).getFinalSpanName(anyObject(), anyObject());
+        doReturn(blankAdapterResult).when(adapterMock).getFinalSpanName(any(), any());
 
         String originalSpanName = "originalSpanName";
         Span span = Span.newBuilder(originalSpanName, SpanPurpose.SERVER).build();
@@ -432,7 +432,7 @@ public class HttpTagAndSpanNamingStrategyTest {
     public void doExtraWingtipsTagging_adds_SPAN_HANDLER_tag_if_adapter_getSpanHandlerTagValue_is_not_blank() {
         // given
         String adapterSpanHandlerTagValue = UUID.randomUUID().toString();
-        doReturn(adapterSpanHandlerTagValue).when(adapterMock).getSpanHandlerTagValue(anyObject(), anyObject());
+        doReturn(adapterSpanHandlerTagValue).when(adapterMock).getSpanHandlerTagValue(any(), any());
 
         // when
         implSpy.doExtraWingtipsTagging(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);
@@ -460,7 +460,7 @@ public class HttpTagAndSpanNamingStrategyTest {
         if ("[whitespace]".equals(blankAdapterResult)) {
             blankAdapterResult = "   \n\r\t   ";
         }
-        doReturn(blankAdapterResult).when(adapterMock).getSpanHandlerTagValue(anyObject(), anyObject());
+        doReturn(blankAdapterResult).when(adapterMock).getSpanHandlerTagValue(any(), any());
 
         // when
         implSpy.doExtraWingtipsTagging(spanMock, requestObjectMock, responseObjectMock, errorMock, adapterMock);

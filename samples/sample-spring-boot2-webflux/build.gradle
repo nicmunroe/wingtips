@@ -40,6 +40,7 @@ dependencies {
         // https://stackoverflow.com/questions/44993615/java-lang-noclassdeffounderror-io-restassured-mapper-factory-gsonobjectmapperfa
         "io.rest-assured:json-path:$restAssuredVersion",
         "io.rest-assured:xml-path:$restAssuredVersion",
+        "io.rest-assured:rest-assured-common:$restAssuredVersion",
         // The jaxb-api is needed for building on the java 11 JDK as these classes were moved out of the Java SE libs.
         "javax.xml.bind:jaxb-api:$jaxbApiVersion",
     )

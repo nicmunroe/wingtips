@@ -106,11 +106,11 @@ ext {
     //   https://docs.junit.org/5.11.4/user-guide/#dependency-metadata
     junitJupiterVersion = '5.11.4'
     junitPlatformVersion = '1.11.4'
-    mockitoVersion = '3.12.4'
+    mockitoVersion = '4.11.0'
     logbackVersion = '1.2.13'
     jacksonVersion = '2.18.6'
     assertJVersion = '3.27.7'
-    restAssuredVersion = '4.5.1'
+    restAssuredVersion = '5.5.7'
     apacheCommonsIoVersion = '2.21.0'
     apacheCommonsLang3Version = '3.20.0'
     jaxbApiVersion = '2.3.1'

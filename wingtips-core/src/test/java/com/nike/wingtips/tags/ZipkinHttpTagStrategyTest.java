@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -58,10 +58,10 @@ public class ZipkinHttpTagStrategyTest {
         String adapterHttpUrl = "url-" + UUID.randomUUID().toString();
         String adapterRoute = "route-" + UUID.randomUUID().toString();
 
-        doReturn(adapterHttpMethod).when(adapterMock).getRequestHttpMethod(anyObject());
-        doReturn(adapterPath).when(adapterMock).getRequestPath(anyObject());
-        doReturn(adapterHttpUrl).when(adapterMock).getRequestUrl(anyObject());
-        doReturn(adapterRoute).when(adapterMock).getRequestUriPathTemplate(anyObject(), anyObject());
+        doReturn(adapterHttpMethod).when(adapterMock).getRequestHttpMethod(any());
+        doReturn(adapterPath).when(adapterMock).getRequestPath(any());
+        doReturn(adapterHttpUrl).when(adapterMock).getRequestUrl(any());
+        doReturn(adapterRoute).when(adapterMock).getRequestUriPathTemplate(any(), any());
 
         // when
         implSpy.doHandleRequestTagging(spanMock, requestMock, adapterMock);
@@ -124,10 +124,10 @@ public class ZipkinHttpTagStrategyTest {
         Integer adapterHttpStatus = 42;
         String adapterRoute = "route-" + UUID.randomUUID().toString();
 
-        doReturn(adapterHttpStatus).when(adapterMock).getResponseHttpStatus(anyObject());
-        doReturn(adapterRoute).when(adapterMock).getRequestUriPathTemplate(anyObject(), anyObject());
+        doReturn(adapterHttpStatus).when(adapterMock).getResponseHttpStatus(any());
+        doReturn(adapterRoute).when(adapterMock).getRequestUriPathTemplate(any(), any());
 
-        doReturn(scenario.adapterErrorTagValue).when(adapterMock).getErrorResponseTagValue(anyObject());
+        doReturn(scenario.adapterErrorTagValue).when(adapterMock).getErrorResponseTagValue(any());
 
         // when
         implSpy.doHandleResponseAndErrorTagging(spanMock, requestMock, responseMock, scenario.error, adapterMock);
@@ -144,7 +144,7 @@ public class ZipkinHttpTagStrategyTest {
             verify(adapterMock).getErrorResponseTagValue(responseMock);
         }
         else {
-            verify(adapterMock, never()).getErrorResponseTagValue(anyObject());
+            verify(adapterMock, never()).getErrorResponseTagValue(any());
         }
 
         if (scenario.expectErrorTagPutOnSpan) {

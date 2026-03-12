@@ -24,9 +24,9 @@ import static com.nike.wingtips.TraceHeaders.TRACE_SAMPLED;
 import static com.nike.wingtips.http.HttpRequestTracingUtils.convertSampleableBooleanToExpectedB3Value;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -621,9 +621,9 @@ public class HttpRequestTracingUtilsTest {
         Object responseMock = mock(Object.class);
         HttpTagAndSpanNamingAdapter<Object, Object> adapterMock = mock(HttpTagAndSpanNamingAdapter.class);
 
-        doReturn(httpMethod).when(adapterMock).getRequestHttpMethod(anyObject());
-        doReturn(pathTemplate).when(adapterMock).getRequestUriPathTemplate(anyObject(), anyObject());
-        doReturn(statusCode).when(adapterMock).getResponseHttpStatus(anyObject());
+        doReturn(httpMethod).when(adapterMock).getRequestHttpMethod(any());
+        doReturn(pathTemplate).when(adapterMock).getRequestUriPathTemplate(any(), any());
+        doReturn(statusCode).when(adapterMock).getResponseHttpStatus(any());
 
         // when
         // The version of the method that takes the request/response/adapter args and the version that takes direct

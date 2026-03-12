@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,8 +54,8 @@ public class OpenTracingHttpTagStrategyTest {
         String adapterHttpMethod = "httpmethod-" + UUID.randomUUID().toString();
         String adapterHttpUrl = "url-" + UUID.randomUUID().toString();
 
-        doReturn(adapterHttpMethod).when(adapterMock).getRequestHttpMethod(anyObject());
-        doReturn(adapterHttpUrl).when(adapterMock).getRequestUrl(anyObject());
+        doReturn(adapterHttpMethod).when(adapterMock).getRequestHttpMethod(any());
+        doReturn(adapterHttpUrl).when(adapterMock).getRequestUrl(any());
 
         // when
         implSpy.doHandleRequestTagging(spanMock, requestMock, adapterMock);
@@ -103,9 +103,9 @@ public class OpenTracingHttpTagStrategyTest {
     ) {
         // given
         Integer adapterHttpStatus = 42;
-        doReturn(adapterHttpStatus).when(adapterMock).getResponseHttpStatus(anyObject());
+        doReturn(adapterHttpStatus).when(adapterMock).getResponseHttpStatus(any());
 
-        doReturn(scenario.adapterErrorTagValue).when(adapterMock).getErrorResponseTagValue(anyObject());
+        doReturn(scenario.adapterErrorTagValue).when(adapterMock).getErrorResponseTagValue(any());
 
         // when
         implSpy.doHandleResponseAndErrorTagging(spanMock, requestMock, responseMock, scenario.error, adapterMock);
@@ -120,7 +120,7 @@ public class OpenTracingHttpTagStrategyTest {
             verify(adapterMock).getErrorResponseTagValue(responseMock);
         }
         else {
-            verify(adapterMock, never()).getErrorResponseTagValue(anyObject());
+            verify(adapterMock, never()).getErrorResponseTagValue(any());
         }
 
         if (scenario.expectErrorTagPutOnSpan) {

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +50,7 @@ public class HttpTagAndSpanNamingAdapterTest {
     @MethodSource("getErrorResponseTagValue_works_as_expected_DataProvider")
     public void getErrorResponseTagValue_works_as_expected(Integer responseStatusCode, String expectedReturnVal) {
         // given
-        doReturn(responseStatusCode).when(implSpy).getResponseHttpStatus(anyObject());
+        doReturn(responseStatusCode).when(implSpy).getResponseHttpStatus(any());
 
         // when
         // Null response object makes no difference - it's entirely dependent on what getResponseHttpStatus() returns.
@@ -116,10 +116,10 @@ public class HttpTagAndSpanNamingAdapterTest {
         String prefix, String httpMethod, String pathTemplate, Integer responseStatusCode, String expectedResult
     ) {
         // given
-        doReturn(prefix).when(implSpy).getSpanNamePrefix(anyObject());
-        doReturn(httpMethod).when(implSpy).getRequestHttpMethod(anyObject());
-        doReturn(pathTemplate).when(implSpy).getRequestUriPathTemplate(anyObject(), anyObject());
-        doReturn(responseStatusCode).when(implSpy).getResponseHttpStatus(anyObject());
+        doReturn(prefix).when(implSpy).getSpanNamePrefix(any());
+        doReturn(httpMethod).when(implSpy).getRequestHttpMethod(any());
+        doReturn(pathTemplate).when(implSpy).getRequestUriPathTemplate(any(), any());
+        doReturn(responseStatusCode).when(implSpy).getResponseHttpStatus(any());
 
         // when
         // getInitialSpanName() and getFinalSpanName() effectively have the same logic - it all boils down to what
